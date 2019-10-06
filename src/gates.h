@@ -1,7 +1,7 @@
 #pragma once
 #include <cinttypes>
 
-enum class GateTy{NULL_GATE,H,CNOT,Rx,Ry,Rz};
+enum class GateTy{NULL_GATE,INPUT,OUTPUT,H,CNOT,Rx,Ry,Rz};
 struct TensorOpInfo{
     GateTy gate;
     double rotation;
