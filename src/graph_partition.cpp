@@ -63,3 +63,20 @@ std::vector<size_t> calculate_partitions(const std::vector<std::vector<size_t>> 
     ));
     return std::vector<size_t>(partition_idxs.begin(),partition_idxs.end());
 }
+size_t search_for_best(const std::vector<std::vector<size_t>> & directed_graph, std::function<bool(std::vector<size_t>)>  works_fn){
+    size_t part_max = directed_graph.size();
+    size_t part_min = 1;
+    while(part_min < part_max-1){
+        size_t part_middle = (part_max + part_min) / 2;
+        if(works_fn(calculate_partitions(directed_graph,part_middle))){
+            part_max = part_middle;
+        }
+        else{
+            part_min = part_middle;
+        }
+    }
+    return part_max;
+}
+std::vector<size_t> calculate_best_working_partition(const std::vector<std::vector<size_t>> & directed_graph, std::function<bool(std::vector<size_t>)>  works_fn){
+    return calculate_partitions(directed_graph,search_for_best(directed_graph,works_fn));
+}

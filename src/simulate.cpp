@@ -26,6 +26,15 @@ std::vector<float> simulate(std::string filename){
             case GateTy::H:
                 hadamard(qureg, gate.bit1);
                 break;
+            case GateTy::X:
+                pauliX(qureg, gate.bit1);
+                break;
+            case GateTy::Y:
+                pauliY(qureg, gate.bit1);
+                break;
+            case GateTy::Z:
+                pauliZ(qureg, gate.bit1);
+                break;
             case GateTy::CNOT:
                 controlledNot(qureg,gate.bit1,gate.bit2);
                 break;

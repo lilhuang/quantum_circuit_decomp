@@ -19,11 +19,23 @@ Circuit parseGates(std::istream & input){
         std::istringstream reader(line);
         std::string name;
         reader >> name;
-        GateInfo gate = {.op=TensorOpInfo{.gate=GateTy::NULL_GATE,.rotation=NULL_INFO},
+        GateInfo gate = {.op=OpInfo{.gate=GateTy::NULL_GATE,.rotation=NULL_INFO},
                         .bit1=NULL_BIT,.bit2=NULL_BIT};
 
         if(name == "H"){
             gate.op.gate = GateTy::H;
+            reader >> gate.bit1;
+        }
+        else if(name == "X"){
+            gate.op.gate = GateTy::X;
+            reader >> gate.bit1;
+        }
+        else if(name == "Y"){
+            gate.op.gate = GateTy::Y;
+            reader >> gate.bit1;
+        }
+        else if(name == "Z"){
+            gate.op.gate = GateTy::Z;
             reader >> gate.bit1;
         }
         else if(name == "CNOT"){
@@ -66,6 +78,15 @@ void printGates(Circuit circuit,std::ostream & output){
         switch(gate.op.gate){
             case GateTy::H:
                 output << "H " << gate.bit1 << "\n";
+                break;
+            case GateTy::X:
+                output << "X " << gate.bit1 << "\n";
+                break;
+            case GateTy::Y:
+                output << "Y " << gate.bit1 << "\n";
+                break;
+            case GateTy::Z:
+                output << "Z " << gate.bit1 << "\n";
                 break;
             case GateTy::CNOT:
                 output << "CNOT " << gate.bit1 << " "  << gate.bit2 << "\n";
