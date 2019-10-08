@@ -1,6 +1,7 @@
 #include "graph_partition.h"
 #include "metis.h"
 #include <stdexcept>
+#include <queue>
 
 struct CompressedStorageFormat{
     std::vector<idx_t> xadj;
@@ -29,6 +30,50 @@ std::vector<std::vector<size_t>> undirected_from_directed(std::vector<std::vecto
     }
     return undirected_graph;
 }
+std::vector<size_t> split_unconnected_components(const std::vector<std::vector<size_t>> & undirected_graph,const std::vector<size_t> & partitioning){
+    size_t orig_size = partitioning.size();
+    std::vector<size_t> new_partitioning(orig_size);
+
+    std::vector<char> has_collected(orig_size);
+    size_t new_partition_idx = 0;
+    while(true){
+        constexpr size_t NULL_CON = size_t(-1);
+        size_t start_loc = NULL_CON;
+        for(size_t i = 0; i < orig_size; i++){
+            if(!has_collected[i]){
+                start_loc = i;
+                break;
+            }
+        }
+        if(start_loc == NULL_CON){
+            break;
+        }
+
+        size_t partition_loc = partitioning[start_loc];
+        std::queue<size_t> neighbors;
+        neighbors.push(start_loc);
+        std::vector<size_t> partition_nodes;
+        while(neighbors.size()){
+            size_t next_loc = neighbors.front();
+            neighbors.pop();
+            if(has_collected.at(next_loc)){
+                continue;
+            }
+            has_collected[next_loc] = true;
+            new_partitioning[next_loc] = new_partition_idx;
+            partition_nodes.push_back(next_loc);
+
+            for(size_t edge : undirected_graph[next_loc]){
+                if(partitioning[edge] == partition_loc){
+                    neighbors.push(edge);
+                }
+            }
+        }
+        new_partition_idx++;
+    }
+    return new_partitioning;
+}
+
 void CheckError(int errcode){
     switch(errcode){
         case METIS_OK:break;
@@ -46,6 +91,9 @@ std::vector<size_t> calculate_partitions(const std::vector<std::vector<size_t>> 
 
     idx_t result_edgeweight;
     std::vector<idx_t> partition_idxs(directed_graph.size());
+    idx_t options[METIS_NOPTIONS];
+    METIS_SetDefaultOptions(options);
+    options[METIS_OPTION_UFACTOR] = 500;// load imballance (1+x)/1000
     CheckError(METIS_PartGraphRecursive(
         &num_verticies,
         &num_constr,
@@ -57,11 +105,12 @@ std::vector<size_t> calculate_partitions(const std::vector<std::vector<size_t>> 
         &num_parts_,
         NULL,//tpwgts
         NULL,//ubvec
-        NULL,//options
+        options,//options
         &result_edgeweight,
         partition_idxs.data()
     ));
-    return std::vector<size_t>(partition_idxs.begin(),partition_idxs.end());
+    std::vector<size_t> partitioning(partition_idxs.begin(),partition_idxs.end());
+    return split_unconnected_components(undirected_graph,partitioning);
 }
 size_t search_for_best(const std::vector<std::vector<size_t>> & directed_graph, std::function<bool(std::vector<size_t>)>  works_fn){
     size_t part_max = directed_graph.size();

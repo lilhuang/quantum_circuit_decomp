@@ -12,7 +12,6 @@ struct Circuit{
     uint64_t num_qubits=0;
     std::vector<GateInfo> gates;
 };
-
 struct MultiCircuit{
     /*
     Contains the circuits plus the classical steps to correctly simulate the output
