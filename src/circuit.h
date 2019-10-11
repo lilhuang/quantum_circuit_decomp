@@ -7,6 +7,9 @@ struct GateInfo{
     OpInfo op=NULL_OP;
     uint64_t bit1=NULL_BIT;
     uint64_t bit2=NULL_BIT;
+    uint64_t getBit(int b){
+        return b == 0 ? bit1 : bit2;
+    }
 };
 struct Circuit{
     uint64_t num_qubits=0;
