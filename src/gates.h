@@ -1,6 +1,6 @@
 #pragma once
 #include <cinttypes>
-#include <stdexcept>
+#include <cstddef>
 
 enum class GateTy{NULL_GATE,H,X,Y,Z,CNOT,Rx,Ry,Rz};
 struct OpInfo{
@@ -9,7 +9,7 @@ struct OpInfo{
 };
 constexpr double NULL_INFO = -1e50;
 constexpr OpInfo NULL_OP = OpInfo{.gate=GateTy::NULL_GATE,.rotation=NULL_INFO};
-inline bool is_2bit_gate(GateTy gate){
+inline size_t num_bits(GateTy gate){
     switch (gate) {
         case GateTy::H:
         case GateTy::X:
@@ -18,10 +18,10 @@ inline bool is_2bit_gate(GateTy gate){
         case GateTy::Rx:
         case GateTy::Ry:
         case GateTy::Rz:
-            return false;
+            return 1;
         case GateTy::CNOT:
-            return true;
-        default:
-            throw std::runtime_error("not valid gate");
+            return 2;
+        case GateTy::NULL_GATE:
+            return 0;
     }
 }
