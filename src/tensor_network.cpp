@@ -36,6 +36,10 @@ MultiGraphNetwork create_multi_graph_network(TensorNetwork network,const std::ve
     size_t num_partitions = 1+(*std::max_element(partition_idxs.begin(),partition_idxs.end()));
 
     std::vector<std::vector<size_t>> partition_nodes(num_partitions);
+    multi_network.nodes.resize(num_partitions);
+    multi_network.forward_edges.resize(num_partitions);
+    multi_network.backward_edges.resize(num_partitions);
+
     for(size_t node = 0; node < old_size; node++){
         partition_nodes[partition_idxs[node]].push_back(node);
     }
@@ -97,30 +101,69 @@ MultiGraphNetwork create_multi_graph_network(TensorNetwork network,const std::ve
 }
 Circuit to_circuit(TensorNetwork network){
     Circuit circ;
-    std::vector<GateInfo> qubit_assignment(network.size(),GateInfo());
+    //std::vector<GateInfo> qubit_assignment(network.size(),GateInfo());
     size_t qubit_counter = 0;
+    std::vector<std::vector<size_t>> qubit_node_assignment(network.size());
+    //std::vector<size_t> qubit_bit_assignment(network.size(),NULL_CON);
     for(size_t i = 0; i < network.size(); i++){
-        TensorTy type = network.tensors[i].type ;
+        TensorTy type = network.tensors[i].type;
         if(type == TensorTy::INPUT || type == TensorTy::CONSTANT){
-            qubit_assignment[i].op = network.tensors[i].op;
-            qubit_assignment[i].bit1 = qubit_counter;
+            //qubit_assignment[i].op = network.tensors[i].op;
+            qubit_node_assignment[i] = std::vector<size_t>{qubit_counter};
             qubit_counter++;
         }
     }
+    circ.num_qubits = qubit_counter;
+    std::unordered_map<size_t,size_t> out_qubit_mapping;
+    std::unordered_map<size_t,size_t> final_out_qubit_mapping;
     while(true){
         bool assigned = false;
         for(size_t i = 0; i < network.size(); i++){
-            /*if(qubit_assignment[i] == NULL_BIT){
-                for(size_t ei = 0; ei <  network.backward_edges[i].size(); ei++){
-                    size_t edge = network.backward_edges[i][ei];
-                    if(qubit_assignment.at(edge).bit1 != NULL_BIT){
-                        //(is_2bit_gate()
-
-                        //)){
-
-                    }
+            if(qubit_node_assignment[i].size() == 0){
+                TensorTy type = network.tensors[i].type;
+                size_t prevnode1 = network.backward_edges[i].at(0);
+                size_t tn_bit = network.get_edge_idx(prevnode1,i);
+                if(!qubit_node_assignment[prevnode1].size()){
+                    continue;
                 }
-            }*/
+                size_t prev_qubit1 = qubit_node_assignment[prevnode1].at(tn_bit);
+                if(type == TensorTy::OUTPUT){
+                    out_qubit_mapping[network.tensors[i].io_label] = prev_qubit1;
+                }
+                else if (type == TensorTy::FINAL_OUTPUT){
+                    final_out_qubit_mapping[network.tensors[i].io_label] = prev_qubit1;
+                }
+                else if (type == TensorTy::GATE){
+
+                    OpInfo op = network.tensors[i].op;
+                    GateInfo gate;
+                    gate.op = network.tensors[i].op;
+                    gate.bit1 = prev_qubit1;
+                    if(num_bits(op.gate) == 2){
+                        size_t prevnode2 = network.backward_edges[i].at(1);
+                        size_t tn_bit = network.get_edge_idx(prevnode1,i);
+                        if(qubit_node_assignment[prevnode1].size() < 2){
+                            continue;
+                        }
+                        size_t prev_qubit2 = qubit_node_assignment[prevnode2].at(tn_bit);
+
+                        gate.bit2 = prev_qubit2;
+                        qubit_node_assignment[i] = std::vector<size_t>{prev_qubit1,prev_qubit2};
+                    }
+                    else{
+                        qubit_node_assignment[i] = std::vector<size_t>{prev_qubit1};
+                    }
+                    circ.gates.push_back(gate);
+                }
+                else{
+                    assert(false && "found bad tensorty");
+                }
+                assigned = true;
+            }
+        }
+        if(!assigned){
+            break;
         }
     }
+    return circ;
 }

@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include "circuit.h"
 
-enum class TensorTy{GATE,TENSOR,EDGE_CUT,CONSTANT,INPUT,OUTPUT,FINAL_OUTPUT};
+enum class TensorTy{GATE,CONSTANT,INPUT,OUTPUT,FINAL_OUTPUT};
 constexpr size_t NULL_IO_LAB = size_t(-1);
 
 struct TensorInfo{
@@ -37,6 +37,15 @@ struct TensorNetwork{
     size_t size()const{
         return tensors.size();
     }
+    size_t get_edge_idx(size_t node,size_t edge){
+        const std::vector<size_t> & edges = forward_edges.at(node);
+        for(size_t i = 0; i < edges.size(); i++){
+            if(edges[i] == edge){
+                return i;
+            }
+        }
+        assert(false && "could not find edge");
+    }
     template<class fn_ty>
     void iter_edges(size_t node,fn_ty fn){
         for(size_t edge : forward_edges[node]){
@@ -53,9 +62,6 @@ constexpr size_t NULL_CON = size_t(-1);
 struct Connector{
     size_t part=NULL_CON;
     size_t idx=NULL_CON;
-};
-struct MultiTensorItem{
-    TensorNetwork network;
 };
 struct MultiGraphNetwork{
     std::vector<std::vector<Connector>> forward_edges;
