@@ -26,14 +26,6 @@ struct TensorNetwork{
         forward_edges.at(src).push_back(dest);
         backward_edges.at(dest).push_back(src);
     }
-    size_t get_edge_idx(size_t node,size_t edge){
-        const std::vector<size_t> & edges = forward_edges.at(node);
-        for(size_t i = 0; i < edges.size(); i++){
-            if(edges[i] == edge){
-                return i;
-            }
-        }
-    }
     size_t size()const{
         return tensors.size();
     }
