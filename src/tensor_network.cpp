@@ -1,5 +1,6 @@
 #include "tensor_network.h"
 #include <algorithm>
+#include <iostream>
 
 TensorNetwork from_circuit(Circuit circ){
     TensorNetwork network;
@@ -68,8 +69,8 @@ MultiGraphNetwork create_multi_graph_network(TensorNetwork network,const std::ve
         for(size_t edge : network.forward_edges[node]){
             Connector new_node = new_nodes[node];
             Connector new_edge = new_nodes[edge];
-            size_t node_out_bit = network.get_backward_edge_idx(edge,node);
             size_t node_in_bit = network.get_forward_edge_idx(node,edge);
+            size_t node_out_bit = network.get_backward_edge_idx(edge,node);
             if(new_node.part != new_edge.part){
                 TensorNetwork & node_tensor_net = multi_network.nodes[new_node.part];
                 size_t out_node_idx = node_tensor_net.size();
@@ -108,7 +109,9 @@ void get_circuit_info(const TensorNetwork & network, Circuit & circ,
         TensorTy type = network.tensors[i].type;
         if(type == TensorTy::INPUT || type == TensorTy::CONSTANT){
             //qubit_assignment[i].op = network.tensors[i].op;
-            input_qubit_mapping[network.tensors[i].io_label] = qubit_counter;
+            if(type == TensorTy::INPUT){
+                input_qubit_mapping[network.tensors[i].io_label] = qubit_counter;
+            }
             qubit_node_assignment[i] = std::vector<size_t>{qubit_counter};
             qubit_counter++;
         }
@@ -182,7 +185,7 @@ bool network_only_uses_computed(const TensorNetwork & net,
         return true;
     }
     TensorInfo tens = net.tensors.at(node);
-    if(tens.type == TensorTy::INPUT && !computed_input.at(tens.io_label)){
+    if(tens.type == TensorTy::INPUT && !computed_input.at(node)){
         return false;
     }
     has_visited.at(node) = true;
@@ -211,9 +214,10 @@ MultiCircuit to_multi_circuit(MultiGraphNetwork graph_network){
     std::vector<std::vector<size_t>> backward_reg_alocs(graph_network.backward_edges.size());
 
     size_t & register_count = multi_circ.num_classical_registers;
+    register_count=0;
     for (size_t part = 0; part < graph_network.nodes.size(); part++){
-        backward_reg_alocs[part].assign(graph_network.backward_edges.size(),NULL_CON);
-        forward_reg_alocs[part].assign(graph_network.forward_edges.size(),NULL_CON);
+        forward_reg_alocs[part].assign(graph_network.forward_edges[part].size(),NULL_CON);
+        backward_reg_alocs[part].assign(graph_network.backward_edges[part].size(),NULL_CON);
     }
 
     bool updated;
@@ -227,7 +231,7 @@ MultiCircuit to_multi_circuit(MultiGraphNetwork graph_network){
             //step 1: calculate output nodes that need to be to computed
             for(size_t n = 0; n < cur_tensor.size(); n++){
                 TensorInfo ninfo = cur_tensor.tensors[n];
-                if(ninfo.type == TensorTy::OUTPUT || ninfo.type == TensorTy::FINAL_OUTPUT){
+                if(ninfo.type == TensorTy::OUTPUT){// || ninfo.type == TensorTy::FINAL_OUTPUT){
                     if(forward_reg_alocs[part].at(ninfo.io_label) == NULL_CON){
                         output_nodes.push_back(n);
                     }
@@ -305,12 +309,14 @@ MultiCircuit to_multi_circuit(MultiGraphNetwork graph_network){
                 size_t io_label = out_pair.first;
                 size_t qubit = out_pair.second;
                 size_t reg_assigned = forward_reg_alocs[part].at(io_label);
-                output_registers[qubit] = reg_assigned;
+                output_registers.at(qubit) = reg_assigned;
             }
             multi_circ.input_registers.push_back(input_registers);
             multi_circ.output_registers.push_back(output_registers);
             multi_circ.circuits.push_back(circ);
+            updated = true;
         }
 
-    }while(!updated);
+    }while(updated);
+    return multi_circ;
 }
