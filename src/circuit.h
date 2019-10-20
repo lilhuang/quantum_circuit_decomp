@@ -19,4 +19,8 @@ struct MultiCircuit{
     /*
     Contains the circuits plus the classical steps to correctly simulate the output
     */
+    size_t num_classical_registers;
+    std::vector<std::vector<size_t>> input_registers;
+    std::vector<std::vector<size_t>> output_registers;
+    std::vector<Circuit> circuits;
 };

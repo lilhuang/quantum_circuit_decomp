@@ -49,10 +49,10 @@ struct TensorNetwork{
     }
     template<class fn_ty>
     void iter_edges(size_t node,fn_ty fn){
-        for(size_t edge : forward_edges[node]){
+        for(size_t & edge : forward_edges[node]){
             fn(edge);
         }
-        for(size_t edge : backward_edges[node]){
+        for(size_t & edge : backward_edges[node]){
             fn(edge);
         }
     }
@@ -75,3 +75,4 @@ struct MultiGraphNetwork{
 };
 MultiGraphNetwork create_multi_graph_network(TensorNetwork network,const std::vector<size_t>& partition_idxs);
 Circuit to_circuit(TensorNetwork network);
+MultiCircuit to_multi_circuit(MultiGraphNetwork graph_network);

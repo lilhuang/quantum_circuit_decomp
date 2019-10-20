@@ -84,7 +84,7 @@ MultiGraphNetwork create_multi_graph_network(TensorNetwork network,const std::ve
                 edge_tensor_net.add_edge(in_node_idx,0,new_edge.idx,node_out_bit);
 
                 Connector new_src = {.part=new_node.part,.idx=out_node_idx};
-                Connector new_dest = {.part=new_node.part,.idx=in_node_idx};
+                Connector new_dest = {.part=new_edge.part,.idx=in_node_idx};
                 multi_network.forward_edges[new_src.part].push_back(new_dest);
                 multi_network.backward_edges[new_dest.part].push_back(new_src);
             }
@@ -164,4 +164,126 @@ Circuit to_circuit(TensorNetwork network){
         }
     }
     return circ;
+}
+bool network_only_uses_computed(const TensorNetwork & net,
+        size_t node,
+        const std::vector<char> & computed_input,
+        std::vector<char> & has_visited){
+    if(has_visited.at(node)){
+        return true;
+    }
+    TensorInfo tens = net.tensors.at(node);
+    if(tens.type == TensorTy::INPUT && !computed_input.at(tens.io_label)){
+        return false;
+    }
+    has_visited.at(node) = true;
+    for(size_t back_edge : net.backward_edges.at(node)){
+        if(!network_only_uses_computed(net,back_edge,computed_input,has_visited)){
+            return false;
+        }
+    }
+    return true;
+}
+std::vector<size_t> network_only_uses_computed(const TensorNetwork & net,
+        const std::vector<size_t> & outputs,
+        const std::vector<char> & computed_input){
+    std::vector<size_t> valid_outputs;
+    std::vector<char> has_visited(net.size());
+    for(size_t out : outputs){
+        if(network_only_uses_computed(net,out,computed_input,has_visited)){
+            valid_outputs.push_back(out);
+        }
+    }
+    return valid_outputs;
+}
+MultiCircuit to_multi_circuit(MultiGraphNetwork graph_network){
+    MultiCircuit multi_circ;
+    std::vector<std::vector<size_t>> forward_reg_alocs(graph_network.forward_edges.size());
+    std::vector<std::vector<size_t>> backward_reg_alocs(graph_network.forward_edges.size());
+
+    size_t register_count = 0;
+    for (size_t part = 0; part < graph_network.nodes.size(); part++){
+        backward_reg_alocs[part].assign(graph_network.backward_edges.size(),NULL_CON);
+        forward_reg_alocs[part].assign(graph_network.forward_edges.size(),NULL_CON);
+        //for(size_t i = 0; i < graph_network.forward_edges.size(); i++){
+        //    forward_reg_alocs[part][i] = register_count;
+            //register_count++;
+        //}
+    }
+
+    bool updated;
+    do{
+        updated = false;
+
+        for (size_t part = 0; part < graph_network.nodes.size(); part++){
+            const TensorNetwork & cur_tensor = graph_network.nodes[part];
+            std::vector<char> computable_input_nodes(cur_tensor.size());
+            std::vector<size_t> output_nodes;
+            //step 1: calculate output nodes that need to be to computed
+            for(size_t n = 0; n < cur_tensor.size(); n++){
+                TensorInfo ninfo = cur_tensor.tensors[n];
+                if(ninfo.type == TensorTy::OUTPUT || ninfo.type == TensorTy::FINAL_OUTPUT){
+                    if(forward_reg_alocs[part].at(ninfo.io_label) == NULL_CON){
+                        output_nodes.push_back(n);
+                    }
+                }
+            }
+            //step 2: calculate input nodes that can be computed
+            for(size_t n = 0; n < cur_tensor.size(); n++){
+                TensorInfo ninfo = cur_tensor.tensors[n];
+                if(ninfo.type == TensorTy::INPUT){
+                    if(backward_reg_alocs[part].at(ninfo.io_label) != NULL_CON){
+                        computable_input_nodes[n] = true;
+                    }
+                }
+            }
+            //step 3: calculate which output nodes can be calculated from the input nodes
+            std::vector<size_t> compute_outputs = network_only_uses_computed(cur_tensor,output_nodes,computable_input_nodes);
+            if(compute_outputs.size() == 0){
+                continue;
+            }
+            //compute new nodes that need to be calculated
+            std::vector<char> nodes_to_compute(cur_tensor.size());
+            for(size_t out : compute_outputs){
+                bool worked = network_only_uses_computed(cur_tensor,out,computable_input_nodes,nodes_to_compute);
+                assert(worked);
+            }
+            //step 4: calculate new tensor network with unnecessary nodes removed, build circuit
+            std::vector<size_t> remapping(cur_tensor.size(),NULL_CON);
+            size_t new_node = 0;
+            TensorNetwork new_tn;
+            for(size_t i = 0; i < cur_tensor.size(); i++){
+                if(nodes_to_compute[i]){
+                    remapping[i] = new_node;
+                    new_tn.tensors.push_back(cur_tensor.tensors[i]);
+                    new_tn.forward_edges.push_back(cur_tensor.forward_edges[i]);
+                    new_tn.backward_edges.push_back(cur_tensor.backward_edges[i]);
+                    new_node++;
+                }
+            }
+            for(size_t n = 0; n < new_tn.size(); n++){
+                new_tn.iter_edges(n,[&](size_t & e){
+                    e = remapping.at(e);
+                });
+            }
+            Circuit new_circ = to_circuit(new_tn);
+
+            //step 5: update register allocation at the tensor level
+            for(size_t output : compute_outputs){
+                TensorInfo ninfo = cur_tensor.tensors.at(output);
+                forward_reg_alocs[part].at(ninfo.io_label) = register_count;
+
+                Connector back_con = graph_network.forward_edges[part].at(ninfo.io_label);
+                TensorInfo back_tensor = graph_network.nodes.at(back_con.part).tensors.at(back_con.idx);
+                assert(back_tensor.type == TensorTy::INPUT);
+                size_t output_idx = back_tensor.io_label;
+                assert(graph_network.backward_edges.at(back_con.part).at(output_idx).idx == output);
+                backward_reg_alocs.at(back_con.part).at(output_idx) = register_count;
+
+                register_count++;
+            }
+            //step 6: actually build the circuits
+        }
+
+    }while(!updated);
 }
