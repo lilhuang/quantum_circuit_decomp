@@ -17,19 +17,28 @@ struct TensorNetwork{
     std::vector<TensorInfo> tensors;
     std::vector<std::vector<size_t>> forward_edges;
     std::vector<std::vector<size_t>> backward_edges;
-    void add_node(TensorInfo info){
+    void add_node(size_t insize,size_t out_size,TensorInfo info){
         tensors.push_back(info);
-        forward_edges.emplace_back();
-        backward_edges.emplace_back();
+        forward_edges.emplace_back(out_size);
+        backward_edges.emplace_back(insize);
     }
-    void add_edge(size_t src,size_t dest){
-        forward_edges.at(src).push_back(dest);
-        backward_edges.at(dest).push_back(src);
+    void add_edge(size_t src,size_t src_idx,size_t dest,size_t dest_idx){
+        forward_edges.at(src).at(src_idx) = dest;
+        backward_edges.at(dest).at(dest_idx) = src;
     }
     size_t size()const{
         return tensors.size();
     }
-    size_t get_edge_idx(size_t node,size_t edge){
+    size_t get_backward_edge_idx(size_t node,size_t edge){
+        const std::vector<size_t> & edges = backward_edges.at(node);
+        for(size_t i = 0; i < edges.size(); i++){
+            if(edges[i] == edge){
+                return i;
+            }
+        }
+        assert(false && "could not find edge");
+    }
+    size_t get_forward_edge_idx(size_t node,size_t edge){
         const std::vector<size_t> & edges = forward_edges.at(node);
         for(size_t i = 0; i < edges.size(); i++){
             if(edges[i] == edge){

@@ -36,16 +36,33 @@ void test_graph_partitioning(){
     }
     std::cout << "\n";
 }
-void test_multigraph_and_to_circuit(){
-    std::ifstream file("Samples/4regRand30Node1-p1.qasm");
+void test_to_tensor_and_to_circuit(){
+    std::ifstream file("Samples/catStateEightQubits.qasm");
     Circuit c = parseGates(file);
     TensorNetwork network = from_circuit(c);
-    std::vector<size_t> partition = calculate_partitions(network.forward_edges,3);
+    Circuit circ = to_circuit(network);
+
+    std::cout << "original circuit" << "\n";
+    printGates(c,std::cout);
+    std::cout << "new circuit" << "\n";
+    std::cout << "new tensornet size: " << network.tensors.size() << "\n";
+
+    printGates(circ,std::cout);
+    std::cout << "circuit test finished" << "\n";
+}
+void test_multigraph_decomp(){
+    std::ifstream file("Samples/catStateEightQubits.qasm");
+    Circuit c = parseGates(file);
+    TensorNetwork network = from_circuit(c);
+    std::vector<size_t> partition = calculate_partitions(network.forward_edges,2);
     MultiGraphNetwork multi_network = create_multi_graph_network(network,partition);
+    std::cout << "number of subnetworks: " << multi_network.nodes.size() << "\n";
     for(TensorNetwork & net : multi_network.nodes){
+        std::cout << "number of nodes in network: " << net.size() << '\n';
         Circuit circ = to_circuit(net);
 
         printGates(circ,std::cout);
+        std::cout << "\n";
     }
 }
 int main (int narg, char** varg) {
@@ -53,5 +70,6 @@ int main (int narg, char** varg) {
     test_graph_partitioning();
     //simulate("Samples/4regRand20Node5-p1.qasm");
     //simulate("Samples/rand-nq6-cn2-d10_rxz.qasm");
-    test_multigraph_and_to_circuit();
+    test_to_tensor_and_to_circuit();
+    test_multigraph_decomp();
 }
