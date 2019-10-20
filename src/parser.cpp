@@ -106,3 +106,18 @@ void printGates(Circuit circuit,std::ostream & output){
         }
     }
 }
+
+void printMultiCircuit(MultiCircuit multi_circ,std::ostream & output){
+    for(size_t part = 0; part < multi_circ.circuits.size(); part++){
+        output << "#circuit " << part << "\n";
+        for(size_t in_r : multi_circ.input_registers[part]){
+            output << in_r << ' ';
+        }
+        output << '\n';
+        printGates(multi_circ.circuits[part],output);
+
+        for(size_t in_r : multi_circ.output_registers[part]){
+            output << in_r << ' ';
+        }
+    }
+}

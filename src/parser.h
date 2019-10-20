@@ -6,3 +6,4 @@
 
 Circuit parseGates(std::istream & input);
 void printGates(Circuit circuit,std::ostream & output);
+void printMultiCircuit(MultiCircuit multi_circ,std::ostream & output);

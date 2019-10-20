@@ -96,9 +96,11 @@ MultiGraphNetwork create_multi_graph_network(TensorNetwork network,const std::ve
     }
     return multi_network;
 }
-Circuit to_circuit(TensorNetwork network){
-    Circuit circ;
-    //std::vector<GateInfo> qubit_assignment(network.size(),GateInfo());
+void get_circuit_info(const TensorNetwork & network, Circuit & circ,
+        std::unordered_map<size_t,size_t> & out_qubit_mapping,
+        std::unordered_map<size_t,size_t> & final_out_qubit_mapping,
+        std::unordered_map<size_t,size_t> & input_qubit_mapping){
+
     size_t qubit_counter = 0;
     std::vector<std::vector<size_t>> qubit_node_assignment(network.size());
     //std::vector<size_t> qubit_bit_assignment(network.size(),NULL_CON);
@@ -106,13 +108,12 @@ Circuit to_circuit(TensorNetwork network){
         TensorTy type = network.tensors[i].type;
         if(type == TensorTy::INPUT || type == TensorTy::CONSTANT){
             //qubit_assignment[i].op = network.tensors[i].op;
+            input_qubit_mapping[network.tensors[i].io_label] = qubit_counter;
             qubit_node_assignment[i] = std::vector<size_t>{qubit_counter};
             qubit_counter++;
         }
     }
     circ.num_qubits = qubit_counter;
-    std::unordered_map<size_t,size_t> out_qubit_mapping;
-    std::unordered_map<size_t,size_t> final_out_qubit_mapping;
     while(true){
         bool assigned = false;
         for(size_t i = 0; i < network.size(); i++){
@@ -163,6 +164,14 @@ Circuit to_circuit(TensorNetwork network){
             break;
         }
     }
+}
+Circuit to_circuit(TensorNetwork network){
+    Circuit circ;
+    std::unordered_map<size_t,size_t> out_qubit_mapping;
+    std::unordered_map<size_t,size_t> final_out_qubit_mapping;
+    std::unordered_map<size_t,size_t> input_qubit_mapping;
+
+    get_circuit_info(network,circ,out_qubit_mapping,final_out_qubit_mapping,input_qubit_mapping);
     return circ;
 }
 bool network_only_uses_computed(const TensorNetwork & net,
@@ -199,16 +208,12 @@ std::vector<size_t> network_only_uses_computed(const TensorNetwork & net,
 MultiCircuit to_multi_circuit(MultiGraphNetwork graph_network){
     MultiCircuit multi_circ;
     std::vector<std::vector<size_t>> forward_reg_alocs(graph_network.forward_edges.size());
-    std::vector<std::vector<size_t>> backward_reg_alocs(graph_network.forward_edges.size());
+    std::vector<std::vector<size_t>> backward_reg_alocs(graph_network.backward_edges.size());
 
-    size_t register_count = 0;
+    size_t & register_count = multi_circ.num_classical_registers;
     for (size_t part = 0; part < graph_network.nodes.size(); part++){
         backward_reg_alocs[part].assign(graph_network.backward_edges.size(),NULL_CON);
         forward_reg_alocs[part].assign(graph_network.forward_edges.size(),NULL_CON);
-        //for(size_t i = 0; i < graph_network.forward_edges.size(); i++){
-        //    forward_reg_alocs[part][i] = register_count;
-            //register_count++;
-        //}
     }
 
     bool updated;
@@ -266,7 +271,6 @@ MultiCircuit to_multi_circuit(MultiGraphNetwork graph_network){
                     e = remapping.at(e);
                 });
             }
-            Circuit new_circ = to_circuit(new_tn);
 
             //step 5: update register allocation at the tensor level
             for(size_t output : compute_outputs){
@@ -283,6 +287,29 @@ MultiCircuit to_multi_circuit(MultiGraphNetwork graph_network){
                 register_count++;
             }
             //step 6: actually build the circuits
+            Circuit circ;
+            std::unordered_map<size_t,size_t> out_qubit_mapping;
+            std::unordered_map<size_t,size_t> final_out_qubit_mapping;
+            std::unordered_map<size_t,size_t> input_qubit_mapping;
+
+            get_circuit_info(new_tn,circ,out_qubit_mapping,final_out_qubit_mapping,input_qubit_mapping);
+            std::vector<size_t> input_registers(circ.num_qubits,EMPTY_REGISTER);
+            std::vector<size_t> output_registers(circ.num_qubits,EMPTY_REGISTER);
+            for(auto in_pair : input_qubit_mapping){
+                size_t io_label = in_pair.first;
+                size_t qubit = in_pair.second;
+                size_t reg_assigned = backward_reg_alocs[part].at(io_label);
+                input_registers[qubit] = reg_assigned;
+            }
+            for(auto out_pair : out_qubit_mapping){
+                size_t io_label = out_pair.first;
+                size_t qubit = out_pair.second;
+                size_t reg_assigned = forward_reg_alocs[part].at(io_label);
+                output_registers[qubit] = reg_assigned;
+            }
+            multi_circ.input_registers.push_back(input_registers);
+            multi_circ.output_registers.push_back(output_registers);
+            multi_circ.circuits.push_back(circ);
         }
 
     }while(!updated);

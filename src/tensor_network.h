@@ -29,7 +29,7 @@ struct TensorNetwork{
     size_t size()const{
         return tensors.size();
     }
-    size_t get_backward_edge_idx(size_t node,size_t edge){
+    size_t get_backward_edge_idx(size_t node,size_t edge)const{
         const std::vector<size_t> & edges = backward_edges.at(node);
         for(size_t i = 0; i < edges.size(); i++){
             if(edges[i] == edge){
@@ -38,7 +38,7 @@ struct TensorNetwork{
         }
         assert(false && "could not find edge");
     }
-    size_t get_forward_edge_idx(size_t node,size_t edge){
+    size_t get_forward_edge_idx(size_t node,size_t edge)const{
         const std::vector<size_t> & edges = forward_edges.at(node);
         for(size_t i = 0; i < edges.size(); i++){
             if(edges[i] == edge){
