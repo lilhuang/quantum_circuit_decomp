@@ -109,7 +109,7 @@ void printGates(Circuit circuit,std::ostream & output){
 }
 
 std::string reg_to_str(size_t reg){
-    return reg == EMPTY_REGISTER ? "E" : std::to_string(reg);
+    return reg == EMPTY_REGISTER ? "E" : "R"+std::to_string(reg);
 }
 
 std::string reg_to_str(size_t reg,OutputType type){

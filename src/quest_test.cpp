@@ -52,7 +52,7 @@ void test_to_tensor_and_to_circuit(){
 }
 void test_multicircuit_decomp(){
 
-    std::ifstream file("Samples/4regRand20Node1-p1.qasm");
+    std::ifstream file("Samples/catStateEightQubits.qasm");
     Circuit c = parseGates(file);
     TensorNetwork network = from_circuit(c);
     std::vector<size_t> partition = calculate_partitions(network.forward_edges,2);
