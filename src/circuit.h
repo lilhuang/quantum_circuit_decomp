@@ -16,6 +16,7 @@ struct Circuit{
     std::vector<GateInfo> gates;
 };
 constexpr uint64_t EMPTY_REGISTER = -2;
+enum class OutputType{FINAL_OUT,REGISTER_OUT,NULL_OUT=-2};
 struct MultiCircuit{
     /*
     Contains the circuits plus the classical steps to correctly simulate the output
@@ -23,5 +24,6 @@ struct MultiCircuit{
     size_t num_classical_registers;
     std::vector<std::vector<size_t>> input_registers;
     std::vector<std::vector<size_t>> output_registers;
+    std::vector<std::vector<OutputType>> output_types;
     std::vector<Circuit> circuits;
 };

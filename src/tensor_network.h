@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include "circuit.h"
 
-enum class TensorTy{GATE,CONSTANT,INPUT,OUTPUT,FINAL_OUTPUT};
+enum class TensorTy{GATE,CONSTANT,INPUT,OUTPUT,FINAL_OUTPUT,FINAL_OUT_GROUP};
 constexpr size_t NULL_IO_LAB = size_t(-1);
 
 struct TensorInfo{
@@ -57,7 +57,10 @@ struct TensorNetwork{
         }
     }
 };
-TensorNetwork from_circuit(Circuit circ);
+TensorNetwork from_circuit(Circuit circ, std::vector<size_t> function_decomp, size_t num_decomps);
+inline TensorNetwork from_circuit(Circuit circ){
+    return from_circuit(circ,std::vector<size_t>(circ.num_qubits,size_t(0)),1);
+}
 //enum class ConectionTy{TRUE_INPUT,};
 constexpr size_t NULL_CON = size_t(-1);
 struct Connector{

@@ -4,3 +4,4 @@ qtorch
 CMakeFiles
 bin
 CMakeCache.txt
+*.user

@@ -55,7 +55,7 @@ void test_multicircuit_decomp(){
     std::ifstream file("Samples/catStateEightQubits.qasm");
     Circuit c = parseGates(file);
     TensorNetwork network = from_circuit(c);
-    std::vector<size_t> partition = calculate_partitions(network.forward_edges,4);
+    std::vector<size_t> partition = calculate_partitions(network.forward_edges,2);
     MultiGraphNetwork multi_network = create_multi_graph_network(network,partition);
     MultiCircuit multi_circ = to_multi_circuit(multi_network);
     std::cout << "number of subcircuits: " << multi_circ.circuits.size() << "\n";

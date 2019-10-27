@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iostream>
 #include <sstream>
+#include <cassert>
 
 Circuit parseGates(std::istream & input){
     Circuit circuit;
@@ -106,8 +107,25 @@ void printGates(Circuit circuit,std::ostream & output){
         }
     }
 }
+
 std::string reg_to_str(size_t reg){
     return reg == EMPTY_REGISTER ? "E" : std::to_string(reg);
+}
+
+std::string reg_to_str(size_t reg,OutputType type){
+    if(type != OutputType::NULL_OUT){
+        assert(reg != EMPTY_REGISTER);
+    }
+    if(type == OutputType::NULL_OUT){
+        return "E";
+    }
+    else if(type == OutputType::REGISTER_OUT){
+        return "R"+std::to_string(reg);
+    }
+    else if(type == OutputType::FINAL_OUT){
+        return "F"+std::to_string(reg);
+    }
+    assert(false);
 }
 void printMultiCircuit(MultiCircuit multi_circ,std::ostream & output){
     for(size_t part = 0; part < multi_circ.circuits.size(); part++){
@@ -118,8 +136,10 @@ void printMultiCircuit(MultiCircuit multi_circ,std::ostream & output){
         output << '\n';
         printGates(multi_circ.circuits[part],output);
 
-        for(size_t in_r : multi_circ.output_registers.at(part)){
-            output << reg_to_str(in_r) << ' ';
+        for(size_t ri = 0; ri < multi_circ.output_registers.at(part).size(); ri++){
+            size_t out_reg = multi_circ.output_registers[part][ri];
+            OutputType out_ty = multi_circ.output_types[part][ri];
+            output << reg_to_str(out_reg,out_ty) << ' ';
         }
         output << "\n";
     }
