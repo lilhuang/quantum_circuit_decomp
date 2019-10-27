@@ -207,12 +207,12 @@ bool network_only_uses_computed(const TensorNetwork & net,
     if(tens.type == TensorTy::INPUT && !computed_input.at(node)){
         return false;
     }
-    has_visited.at(node) = true;
     for(size_t back_edge : net.backward_edges.at(node)){
         if(!network_only_uses_computed(net,back_edge,computed_input,has_visited)){
             return false;
         }
     }
+    has_visited.at(node) = true;
     return true;
 }
 std::vector<size_t> network_only_uses_computed(const TensorNetwork & net,
