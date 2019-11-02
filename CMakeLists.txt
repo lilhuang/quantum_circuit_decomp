@@ -26,6 +26,7 @@ set_property(TARGET view_quant_circ PROPERTY CXX_STANDARD 14)
 
 add_subdirectory("metis-5.1.0")
 add_subdirectory("QuEST_")
+#add_subdirectory("qtorch")
 
 target_link_libraries(quant_circ_lib PUBLIC metis QuEST)
 target_link_libraries(quant_circ_lib PUBLIC "${OpenMP_CXX_FLAGS}")

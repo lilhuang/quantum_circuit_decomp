@@ -1,18 +1,14 @@
-#include <fstream>
-
 # include <stdio.h>
 # include <math.h>
 #include <iostream>
+#include <string>
+#include <fstream>
 
 #include "simulate.h"
 # include "QuEST.h"
-#include "parser.h"
 
-std::vector<float> simulate(std::string filename){
-    std::ifstream file(filename);
-    Circuit circuit = parseGates(file);
+std::vector<qcomplex> exact_simulate_circuit(const Circuit & circuit){
     int numQubits = circuit.num_qubits;
-    file >> numQubits;
 
     // prepare QuEST
     QuESTEnv env = createQuESTEnv();
@@ -53,9 +49,18 @@ std::vector<float> simulate(std::string filename){
         }
     }
     //reportState(qureg);
+    size_t res_size = size_t(1)<<numQubits;
+    std::vector<qcomplex> res(res_size);
+    for(size_t i = 0; i < res_size; i++){
+        res.push_back(qcomplex(getRealAmp(qureg,i),getImagAmp(qureg,i)));
+    }
+    //std::vector<qcomplex> res = read_quest_reported_csv();
+    //delete_reported_csv();
 
     destroyQureg(qureg, env);
     destroyQuESTEnv(env);
-    std::cout << "finished " << filename << "\n";
-    return std::vector<float> {};
+    return res;
+}
+std::vector<CircuitSample> sampled_simulate_multicircuit(const MultiCircuit & m, std::vector<size_t> function_decomp){
+    
 }

@@ -93,8 +93,14 @@ std::vector<size_t> calculate_partitions(const std::vector<std::vector<size_t>> 
     std::vector<idx_t> partition_idxs(directed_graph.size());
     idx_t options[METIS_NOPTIONS];
     METIS_SetDefaultOptions(options);
-    options[METIS_OPTION_UFACTOR] = 500;// load imballance (1+x)/1000
-    CheckError(METIS_PartGraphRecursive(
+    options[METIS_OPTION_PTYPE] = METIS_PTYPE_RB;
+    //options[METIS_OPTION_PTYPE] = METIS_PTYPE_KWAY;
+    options[METIS_OPTION_UFACTOR] = 900;// load imballance (1+x)/1000
+    options[METIS_OPTION_NITER] = 100;
+    options[METIS_OPTION_NCUTS] = 100;
+    options[METIS_OPTION_MINCONN] = 0;
+    options[METIS_OPTION_CONTIG] = 1;//try to make graph contiguous
+    CheckError(METIS_PartGraphKway(
         &num_verticies,
         &num_constr,
         CSR_data.xadj.data(),

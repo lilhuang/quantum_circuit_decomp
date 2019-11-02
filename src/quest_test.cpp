@@ -79,7 +79,8 @@ void test_multigraph_decomp(){
 int main (int narg, char** varg) {
     test_parsing();
     test_graph_partitioning();
-    //simulate("Samples/4regRand20Node5-p1.qasm");
+    std::ifstream sim_circ("Samples/4regRand20Node5-p1.qasm");
+    exact_simulate_circuit(parseGates(sim_circ));
     //simulate("Samples/rand-nq6-cn2-d10_rxz.qasm");
     test_to_tensor_and_to_circuit();
     test_multigraph_decomp();
