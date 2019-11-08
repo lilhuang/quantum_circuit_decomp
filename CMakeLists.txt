@@ -24,6 +24,8 @@ set_property(TARGET quant_circ_lib PROPERTY CXX_STANDARD 14)
 set_property(TARGET test_quant_circ PROPERTY CXX_STANDARD 14)
 set_property(TARGET view_quant_circ PROPERTY CXX_STANDARD 14)
 
+set(MULTITHREADED FALSE CACHE BOOL "disable multithreading for quest")
+
 add_subdirectory("metis-5.1.0")
 add_subdirectory("QuEST_")
 #add_subdirectory("qtorch")
