@@ -22,10 +22,10 @@ void print_communication_cost(MultiCircuit multi_circ){
     }
     std::cout << "communi cost: " << count << '\n';
 }
-std::vector<size_t> split_all_outs(size_t t){
-    std::vector<size_t> r(t);
-    for(int i = 0; i < t; i++){
-        r[i] = i/4;
+std::vector<uint8_t> split_all_outs(size_t t){
+    std::vector<uint8_t> r(t,size_t(0));
+    for(int i = 0; i < t/4; i++){
+        r[i] = 1;
     }
     return r;
 }
@@ -41,7 +41,7 @@ int main (int narg, char** varg) {
         throw std::runtime_error("filename: "+fname+"  could not be read.");
     }
     Circuit c = parseGates(file);
-    TensorNetwork network = from_circuit(c,split_all_outs(c.num_qubits),(c.num_qubits+3)/4);
+    TensorNetwork network = from_circuit(c,split_all_outs(c.num_qubits));
     std::vector<size_t> partition = calculate_partitions(network.forward_edges,num_parts);
     MultiGraphNetwork multi_network = create_multi_graph_network(network,partition);
     MultiCircuit multi_circ = to_multi_circuit(multi_network);
