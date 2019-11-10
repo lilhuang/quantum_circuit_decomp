@@ -12,6 +12,7 @@ add_library(quant_circ_lib
     ${CPP_SOURCE_DIR}/quest_test.cpp
     ${CPP_SOURCE_DIR}/simulate.cpp
     ${CPP_SOURCE_DIR}/tensor_network.cpp
+    ${CPP_SOURCE_DIR}/genetic_partitioning.cpp
 )
 add_executable(test_quant_circ
     ${CPP_SOURCE_DIR}/quest_test.cpp
