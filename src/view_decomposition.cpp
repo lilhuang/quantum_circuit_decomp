@@ -49,8 +49,12 @@ double compute_cost(size_t max_qubits,const std::vector<size_t> & partition,cons
     MultiCircuit multi_circ = to_multi_circuit(multi_network);
     size_t com_size = communi_size(multi_circ);
     size_t num_qubits = num_qubits_used(multi_circ);
-    double qubit_cost = num_qubits > max_qubits ? -1000000 : 0.1*num_qubits;
+    double qubit_cost = num_qubits > max_qubits ? -1000000 : -0.1*num_qubits;
     double communi_cost = -10.0*com_size;
+    if(num_qubits == 0){
+        std::cout << multi_network.nodes.size() << " ";
+        std::cout << multi_circ.circuits.size() << " \n";
+    }
     return qubit_cost + communi_cost;
 }
 int main (int narg, char** varg) {
@@ -65,10 +69,10 @@ int main (int narg, char** varg) {
         throw std::runtime_error("filename: "+fname+"  could not be read.");
     }
     Circuit c = parseGates(file);
-    TensorNetwork network = from_circuit(c,split_all_outs(c.num_qubits));
-    //std::vector<size_t> partition = calculate_best_partition(network.forward_edges.size(),[=](std::vector<size_t> part){
-    //    return compute_cost(max_qubits,part,network);
-    //});
+    TensorNetwork network = from_circuit(c);
+    /*std::vector<size_t> partition = calculate_best_partition(network.forward_edges,[=](std::vector<size_t> part){
+        return compute_cost(max_qubits,part,network);
+    });*/
 
     std::vector<size_t> partition = calculate_best_working_partition(network.forward_edges,[&](std::vector<size_t> part){
         MultiGraphNetwork multi_network = create_multi_graph_network(network,part);
@@ -81,4 +85,6 @@ int main (int narg, char** varg) {
     std::cout << "#number of subcircuits: " << multi_circ.circuits.size() << "\n";
     printMultiCircuit(multi_circ,std::cout);
     print_communication_cost(multi_circ);
+    std::ofstream graphvizfile("graph.vis");
+    printPartitioning(network,partition,graphvizfile);
 }
