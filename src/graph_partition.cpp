@@ -1,8 +1,8 @@
 #include "graph_partition.h"
-#include "metis.h"
+//#include "metis.h"
 #include <stdexcept>
 #include <queue>
-
+/*
 struct CompressedStorageFormat{
     std::vector<idx_t> xadj;
     std::vector<idx_t> adjncy;
@@ -19,7 +19,7 @@ CompressedStorageFormat compute_CSR(std::vector<std::vector<size_t>> undirected_
     }
     res.xadj.push_back(counter);
     return res;
-}
+}*/
 std::vector<std::vector<size_t>> undirected_from_directed(std::vector<std::vector<size_t>> directed_graph){
     std::vector<std::vector<size_t>> undirected_graph(directed_graph.size());
     for(size_t n = 0; n < directed_graph.size(); n++){
@@ -74,16 +74,16 @@ std::vector<size_t> split_unconnected_components(const std::vector<std::vector<s
     return new_partitioning;
 }
 
-void CheckError(int errcode){
+/*void CheckError(int errcode){
     switch(errcode){
         case METIS_OK:break;
         case METIS_ERROR_INPUT:throw std::runtime_error("METIS_ERROR_INPUT");
         case METIS_ERROR_MEMORY:throw std::runtime_error("METIS_ERROR_MEMORY");
         case METIS_ERROR:throw std::runtime_error("METIS_ERROR");
     }
-}
+}*/
 std::vector<size_t> calculate_partitions(const std::vector<std::vector<size_t>> & directed_graph,size_t num_parts){
-    std::vector<std::vector<size_t>> undirected_graph = undirected_from_directed(directed_graph);
+    /*std::vector<std::vector<size_t>> undirected_graph = undirected_from_directed(directed_graph);
     CompressedStorageFormat CSR_data = compute_CSR(undirected_graph);
     idx_t num_verticies = directed_graph.size();
     idx_t num_constr = 1;
@@ -116,7 +116,7 @@ std::vector<size_t> calculate_partitions(const std::vector<std::vector<size_t>> 
         partition_idxs.data()
     ));
     std::vector<size_t> partitioning(partition_idxs.begin(),partition_idxs.end());
-    return split_unconnected_components(undirected_graph,partitioning);
+    return split_unconnected_components(undirected_graph,partitioning);*/
 }
 size_t search_for_best(const std::vector<std::vector<size_t>> & directed_graph, std::function<bool(std::vector<size_t>)>  works_fn){
     size_t part_max = directed_graph.size();

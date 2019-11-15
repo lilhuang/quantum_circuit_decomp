@@ -72,38 +72,34 @@ Circuit parseGates(std::istream & input){
     }
     return circuit;
 }
+std::string gate_name(OpInfo op){
+    switch(op.gate){
+        case GateTy::NULL_GATE:return "NULL_GATE";
+        case GateTy::H:return "H";
+        case GateTy::X:return "X";
+        case GateTy::Y:return "Y";
+        case GateTy::Z:return "Z";
+        case GateTy::CNOT:return "CNOT";
+        case GateTy::Rx:return "Rx " + std::to_string(op.rotation);
+        case GateTy::Ry:return "Ry " + std::to_string(op.rotation);
+        case GateTy::Rz:return "Rz " + std::to_string(op.rotation);
+        default: throw std::runtime_error("gate not implemented(printing)!");
+    }
+}
 void printGates(Circuit circuit,std::ostream & output){
     output << circuit.num_qubits << "\n";
 
     for(GateInfo & gate : circuit.gates){
-        switch(gate.op.gate){
-            case GateTy::H:
-                output << "H " << gate.bit1 << "\n";
-                break;
-            case GateTy::X:
-                output << "X " << gate.bit1 << "\n";
-                break;
-            case GateTy::Y:
-                output << "Y " << gate.bit1 << "\n";
-                break;
-            case GateTy::Z:
-                output << "Z " << gate.bit1 << "\n";
-                break;
-            case GateTy::CNOT:
-                output << "CNOT " << gate.bit1 << " "  << gate.bit2 << "\n";
-                break;
-            case GateTy::Rz:
-                output << "Rz " << gate.op.rotation << " " << gate.bit1 << "\n";
-                break;
-            case GateTy::Ry:
-                output << "Ry " << gate.op.rotation << " "  << gate.bit1 << "\n";
-                break;
-            case GateTy::Rx:
-                output << "Rx " << gate.op.rotation << " "  << gate.bit1 << "\n";
-                break;
-            default:
-                throw std::runtime_error("gate not implemented(printing)!");
-                break;
+        std::string name = gate_name(gate.op);
+        int nbits = num_bits(gate.op.gate);
+        if(nbits == 1){
+            output << name << ' ' << gate.bit1 << "\n";
+        }
+        else if (nbits == 2){
+            output << name << ' ' << gate.bit1 << ' ' << gate.bit2 << "\n";
+        }
+        else{
+            throw std::runtime_error("gate not implemented(printing)!");
         }
     }
 }
@@ -143,4 +139,66 @@ void printMultiCircuit(MultiCircuit multi_circ,std::ostream & output){
         }
         output << "\n";
     }
+}
+void print_header(std::ostream & os){
+    os << "digraph G {\n"
+            "\trankdir=LR;\n"
+            "\tnode [\n"
+        "\tlabeljust=\"l\"\n"
+        "\tcolorscheme=\"accent8\"\n"
+        "\tstyle=filled\n"
+        "\tshape=record\n"
+    "]\n"
+    "edge[\n"
+        "penwidth=2\n"
+    "]\n";
+}
+void print_footer(std::ostream & os){
+    os << "}\n";
+}
+void print_node(std::ostream & os,std::string name, int node, int part){
+    os << " n" << node << " [fillcolor="<<part+1<<", label=\""<<name<<"\"]\n";
+}
+void print_edge(std::ostream & os,int n1, int n2,bool diff_part){
+    std::string color = diff_part ? "red" : "black";
+    os << " n" << n1 << " -> " << "n" << n2 <<" [color="<<color<<"]" << "\n";
+}
+std::string tensor_name(TensorInfo info){
+    switch(info.type){
+        case TensorTy::GATE: return gate_name(info.op);
+        case TensorTy::CONSTANT: return "∣0⟩";
+        case TensorTy::FINAL_OUTPUT: return "∡";
+        default: throw std::runtime_error("tensor type not implemented(tensor_name)!");
+    }
+}
+void start_same_rank(std::ostream & os){
+    os << "{\nrank=same;\n";
+}
+void end_same_rank(std::ostream & os){
+    os << "}\n";
+}
+void print_nodes_of_type(TensorNetwork tn, std::vector<size_t> partitioning,TensorTy ty,std::ostream & os){
+    for(size_t i = 0; i < tn.size(); i++){
+        if(tn.tensors[i].type == ty){
+            print_node(os,tensor_name(tn.tensors[i]),i,partitioning[i]);
+        }
+    }
+}
+void printPartitioning(TensorNetwork tn, std::vector<size_t> partitioning, std::ostream & os){
+    print_header(os);
+
+    start_same_rank(os);
+    print_nodes_of_type(tn,partitioning,TensorTy::CONSTANT,os);
+    end_same_rank(os);
+    print_nodes_of_type(tn,partitioning,TensorTy::GATE,os);
+    start_same_rank(os);
+    print_nodes_of_type(tn,partitioning,TensorTy::FINAL_OUTPUT,os);
+    end_same_rank(os);
+    for(size_t n = 0; n < tn.size(); n++){
+        for(size_t e : tn.forward_edges[n]){
+            bool diff_part = partitioning[n] != partitioning[e];
+            print_edge(os,n,e,diff_part);
+        }
+    }
+    print_footer(os);
 }
