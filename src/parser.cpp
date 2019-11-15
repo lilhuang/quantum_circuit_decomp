@@ -144,3 +144,65 @@ void printMultiCircuit(MultiCircuit multi_circ,std::ostream & output){
         output << "\n";
     }
 }
+const std::vector<std::string> part_colors = {
+    "blue",
+    "green",
+    "red",
+    "gray",
+    "brown"
+};
+void print_input(std::ostream & os,int qbit){
+    os << "\\node[draw=black] at (-0.31,"<<qbit<<") (I"<<qbit<<") {$|0\\rangle$};\n";
+}
+
+void print_output(std::ostream & os,int qbit,int pos){
+    os << "\\node at ("<<pos<<"+0.31,"<<qbit<<") (O"<<qbit<<") {\\[\\Qcircuit {\\meter }\\]};\n";
+}
+void print_rectangle(std::ostream & os,int pos,int qbit1,int qubit2,int part,std::string name){
+    os << "\\draw [draw=black,fill="<<part_colors.at(part)<<"] "
+       <<"("<<pos<<",-0.4+"<<qbit1<<") rectangle "
+       <<"(1+"<<pos<<",+0.4+"<<qubit2<<")"
+       <<"node[pos=0.5] {\\footnotesize "<<name<<"};\n";
+}
+void print_circuit_line(std::ostream & os,int qubit,int pos_start,int pos_end,bool part_diffed){
+    os << "\\draw ("<<pos_start<<","<<qubit<<") -- " <<
+                  "("<<pos_end<<","<<qubit<<");\n";
+}
+
+void print_partition_tikz(Circuit circ,std::vector<size_t> partition, std::ostream & os){
+    std::vector<size_t> positions(circ.num_qubits,0);
+    size_t partition_offset = circ.num_qubits;
+    os << partition.size() << "\n";
+    os << partition.size() << "\n";
+    os << partition.size() << "\n";
+    for(size_t qbit = 0; qbit <circ.num_qubits; qbit++){
+        print_input(os,qbit);
+        positions[qbit]++;
+    }
+    for(size_t gidx = 0; gidx < circ.gates.size(); gidx++){
+        GateInfo gate = circ.gates[gidx];
+        if(num_bits(gate.op.gate) == 1){
+            assert(gate.bit1 != NULL_BIT);
+            print_rectangle(os,positions[gate.bit1],gate.bit1,gate.bit1,partition.at(gidx+partition_offset),"");
+
+            print_circuit_line(os,gate.bit1,positions[gate.bit1]-1,positions[gate.bit1],false);
+
+            positions[gate.bit1] += 2;
+        }
+        else{
+            assert(gate.bit1 != NULL_BIT);
+            assert(gate.bit2 != NULL_BIT);
+            int gatepos = std::max(positions[gate.bit1],positions[gate.bit2]);
+            print_rectangle(os,gatepos,gate.bit1,gate.bit2,partition.at(gidx+partition_offset),"");
+
+            print_circuit_line(os,gate.bit1,positions[gate.bit1]-1,gatepos,false);
+            print_circuit_line(os,gate.bit2,positions[gate.bit2]-1,gatepos,false);
+
+            positions[gate.bit1] = gatepos+2;
+            positions[gate.bit2] = gatepos+2;
+        }
+    }
+    for(size_t qbit = 0; qbit < circ.gates.size(); qbit++){
+
+    }
+}

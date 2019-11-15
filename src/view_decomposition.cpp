@@ -81,4 +81,6 @@ int main (int narg, char** varg) {
     std::cout << "#number of subcircuits: " << multi_circ.circuits.size() << "\n";
     printMultiCircuit(multi_circ,std::cout);
     print_communication_cost(multi_circ);
+    //std::ofstream part_tikz_file("partion_description.tex");
+    print_partition_tikz(c,partition,std::cout);
 }
