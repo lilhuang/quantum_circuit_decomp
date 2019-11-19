@@ -87,8 +87,9 @@ int main (int narg, char** varg) {
     print_communication_cost(multi_circ);
     std::ofstream graphvizfile("graph.vis");
     printPartitioning(network,partition,graphvizfile);
-    CircuitSamples c1 = true_samples(c,1000);
+    CircuitSamples samps = true_samples(c,10000);
+    std::vector<double> prob_mags = probability_mags(exact_simulate_circuit(c));
     CircuitSamples c2 = sampled_simulate_multicircuit(multi_circ);
-    double s = similarity(c1,c2);
-    std::cout << "similarity: " << s << "\n";
+    std::cout << "similarity_multicirc: " << similarity(c2,prob_mags) << "\n";
+    std::cout << "similarity_circ: " << similarity(samps,prob_mags) << "\n";
 }

@@ -58,7 +58,7 @@ std::vector<qcomplex> exact_simulate_circuit(const Circuit & circuit){
     size_t res_size = size_t(1)<<numQubits;
     std::vector<qcomplex> res(res_size);
     for(size_t i = 0; i < res_size; i++){
-        res.push_back(qcomplex(getRealAmp(qureg,i),getImagAmp(qureg,i)));
+        res[i] = (qcomplex(getRealAmp(qureg,i),getImagAmp(qureg,i)));
     }
     //std::vector<qcomplex> res = read_quest_reported_csv();
     //delete_reported_csv();
@@ -74,12 +74,12 @@ CircuitSamples true_samples(const Circuit & circuit,int num_samples){
     QuESTEnv env = createQuESTEnv();
     // create qureg; let zeroth qubit be ancilla
     Qureg qureg = createQureg(numQubits, env);
-    initZeroState(qureg);
     CircuitSamples samps;
     for(int i = 0; i < num_samples; i++){
+        initZeroState(qureg);
         simulate_circuit_helper(qureg,circuit);
         //reportState(qureg);
-        QuantumFinalOut fin_out = 0;
+        QuantumFinalOut fin_out;
         for(int qb = 0; qb < circuit.num_qubits; qb++){
             int measure_val = measure(qureg,qb);
             fin_out[qb] = measure_val;
@@ -97,6 +97,17 @@ size_t total_samples(const CircuitSamples & samps){
     }
     return count;
 }
+double mag(qcomplex c){
+    return (c * c).real();
+}
+std::vector<double> probability_mags(const std::vector<qcomplex> & exact_result){
+    std::vector<double> res(exact_result.size());
+    for(size_t i = 0; i < exact_result.size(); i++){
+        res[i] = mag(exact_result[i]);
+    }
+    return res;
+}
+
 double similarity(const CircuitSamples & c1,const CircuitSamples & c2){
     //calculates Bhattacharyya distance
     size_t count1 = total_samples(c1);
@@ -109,6 +120,18 @@ double similarity(const CircuitSamples & c1,const CircuitSamples & c2){
         }
     }
     return -log(BC);
+}
+double similarity(const CircuitSamples & c1,const std::vector<double> & c2){
+    size_t count1 = total_samples(c1);
+
+    double sum = 0;
+    for(const auto & keyval_pair : c1){
+        uint64_t idx = keyval_pair.first.to_ullong();
+        double P = keyval_pair.second/double(count1);
+        double Q = c2[idx];
+        sum += P * log(P/Q);
+    }
+    return sum;
 }
 void simulate_pauli_output(Qureg & qureg,int bit,int pauli){
     switch(pauli){

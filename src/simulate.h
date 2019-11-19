@@ -20,3 +20,5 @@ std::vector<qcomplex> exact_simulate_circuit(const Circuit & c);
 CircuitSamples true_samples(const Circuit & circuit,int num_samples);
 CircuitSamples sampled_simulate_multicircuit(const MultiCircuit & m);
 double similarity(const CircuitSamples & c1,const CircuitSamples & c2);
+double similarity(const CircuitSamples & c1,const std::vector<double> & c2);
+std::vector<double> probability_mags(const std::vector<qcomplex> & exact_result);
