@@ -11,9 +11,9 @@ using Population = std::vector<Info>;
 using Graph = std::vector<std::vector<size_t>>;
 
 constexpr size_t POP_SIZE = 50;
-constexpr size_t MUTATE_COUNT = 120;
-constexpr size_t CROSSOVER_COUNT = 80;
-constexpr size_t GENERATIONS = 200;
+constexpr size_t MUTATE_COUNT = 30;
+constexpr size_t CROSSOVER_COUNT = 20;
+constexpr size_t GENERATIONS = 50;
 std::random_device rand_device;
 std::default_random_engine generator(rand_device());
 size_t lrand(){

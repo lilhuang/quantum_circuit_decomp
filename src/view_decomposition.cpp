@@ -87,4 +87,8 @@ int main (int narg, char** varg) {
     print_communication_cost(multi_circ);
     std::ofstream graphvizfile("graph.vis");
     printPartitioning(network,partition,graphvizfile);
+    CircuitSamples c1 = true_samples(c,1000);
+    CircuitSamples c2 = sampled_simulate_multicircuit(multi_circ);
+    double s = similarity(c1,c2);
+    std::cout << "similarity: " << s << "\n";
 }

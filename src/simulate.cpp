@@ -67,6 +67,49 @@ std::vector<qcomplex> exact_simulate_circuit(const Circuit & circuit){
     destroyQuESTEnv(env);
     return res;
 }
+CircuitSamples true_samples(const Circuit & circuit,int num_samples){
+    int numQubits = circuit.num_qubits;
+
+    // prepare QuEST
+    QuESTEnv env = createQuESTEnv();
+    // create qureg; let zeroth qubit be ancilla
+    Qureg qureg = createQureg(numQubits, env);
+    initZeroState(qureg);
+    CircuitSamples samps;
+    for(int i = 0; i < num_samples; i++){
+        simulate_circuit_helper(qureg,circuit);
+        //reportState(qureg);
+        QuantumFinalOut fin_out = 0;
+        for(int qb = 0; qb < circuit.num_qubits; qb++){
+            int measure_val = measure(qureg,qb);
+            fin_out[qb] = measure_val;
+        }
+        samps[fin_out]++;
+    }
+    destroyQureg(qureg, env);
+    destroyQuESTEnv(env);
+    return samps;
+}
+size_t total_samples(const CircuitSamples & samps){
+    size_t count = 0;
+    for(const auto & keyval_pair : samps){
+        count += keyval_pair.second;
+    }
+    return count;
+}
+double similarity(const CircuitSamples & c1,const CircuitSamples & c2){
+    //calculates Bhattacharyya distance
+    size_t count1 = total_samples(c1);
+    size_t count2 = total_samples(c2);
+
+    double BC = 0;
+    for(const auto & keyval_pair : c1){
+        if(c2.count(keyval_pair.first)){
+            BC += sqrt((keyval_pair.second/double(count1))*(c2.at(keyval_pair.first)/double(count2)));
+        }
+    }
+    return -log(BC);
+}
 void simulate_pauli_output(Qureg & qureg,int bit,int pauli){
     switch(pauli){
         case 0: break;// identity
@@ -92,51 +135,54 @@ CircuitSamples sampled_simulate_multicircuit(const MultiCircuit & m){
     QuESTEnv env = createQuESTEnv();
     constexpr size_t NUM_PAULI = 4;
     std::unordered_map<QuantumFinalOut, int> measure_counts;
-    for(uint64_t idx = 0; idx < (NUM_PAULI)<<(m.num_classical_registers); idx++){
-        std::bitset<64> pauli_choices(idx);
-        for(uint64_t isx = 0; isx < (1ULL << m.num_classical_registers); isx++){
-            std::bitset<64> class_reg_vals(isx);
-            QuantumFinalOut final_out_bits;
-            std::bitset<64> actual_reg_assign;
-            for(size_t circ = 0; circ < m.circuits.size(); circ++){
-                const Circuit & cur_circ = m.circuits[circ];
-                Qureg qureg = createQureg(cur_circ.num_qubits, env);
-                initZeroState(qureg);
-                for(int qr = 0; qr < m.input_registers[circ].size(); qr++){
-                    size_t creg = m.input_registers[circ][qr];
-                    if(creg != EMPTY_REGISTER){
-                        int classical_val = class_reg_vals[qr];
-                        int pauli_val = pauli_choices[2*creg] + 2*int(pauli_choices[2*creg+1]);
-                        set_input_bit(qureg,qr,classical_val);
-                        simulate_pauli_input(qureg,qr,pauli_val);
+    for(uint64_t converg_iters = 0; converg_iters < 40*(1ULL << m.num_classical_registers); converg_iters++){
+        for(uint64_t idx = 0; idx < (NUM_PAULI)<<(m.num_classical_registers); idx++){
+            std::bitset<64> pauli_choices(idx);
+            for(uint64_t isx = 0; isx < (1ULL << m.num_classical_registers); isx++){
+                std::bitset<64> class_reg_vals(isx);
+                QuantumFinalOut final_out_bits;
+                std::bitset<64> actual_reg_assign;
+                for(size_t circ = 0; circ < m.circuits.size(); circ++){
+                    const Circuit & cur_circ = m.circuits[circ];
+                    Qureg qureg = createQureg(cur_circ.num_qubits, env);
+                    initZeroState(qureg);
+                    for(int qr = 0; qr < m.input_registers[circ].size(); qr++){
+                        size_t creg = m.input_registers[circ][qr];
+                        if(creg != EMPTY_REGISTER){
+                            int classical_val = class_reg_vals[qr];
+                            int pauli_val = pauli_choices[2*creg] + 2*int(pauli_choices[2*creg+1]);
+                            set_input_bit(qureg,qr,classical_val);
+                            simulate_pauli_input(qureg,qr,pauli_val);
+                        }
+                    }
+
+                    simulate_circuit_helper(qureg,cur_circ);
+
+                    for(int qr = 0; qr < m.output_registers[circ].size(); qr++){
+                        if(m.output_types[circ][qr] == OutputType::REGISTER_OUT){
+                            size_t creg = m.output_registers[circ][qr];
+
+                            int pauli_val = pauli_choices[2*creg]+2*int(pauli_choices[2*creg+1]);
+                            simulate_pauli_output(qureg,qr,pauli_val);
+                        }
+                    }
+                    for(int qr = 0; qr < m.output_registers[circ].size(); qr++){
+                        int measure_val = measure(qureg,qr);
+                        if(m.output_types[circ][qr] == OutputType::FINAL_OUT){
+                            size_t final_out_qbit = m.output_registers[circ][qr];
+                            final_out_bits[final_out_qbit] = measure_val;
+                        }
+                        else if(m.output_types[circ][qr] == OutputType::REGISTER_OUT){
+                            size_t reg_out_bit = m.output_registers[circ][qr];
+                            actual_reg_assign[reg_out_bit] = measure_val;
+                        }
                     }
                 }
-
-                simulate_circuit_helper(qureg,cur_circ);
-
-                for(int qr = 0; qr < m.output_registers[circ].size(); qr++){
-                    if(m.output_types[circ][qr] == OutputType::REGISTER_OUT){
-                        size_t creg = m.output_registers[circ][qr];
-
-                        int pauli_val = pauli_choices[2*creg]+2*int(pauli_choices[2*creg+1]);
-                        simulate_pauli_output(qureg,qr,pauli_val);
-                    }
+                if(actual_reg_assign == class_reg_vals){
+                    measure_counts[final_out_bits]++;
                 }
-                for(int qr = 0; qr < m.output_registers[circ].size(); qr++){
-                    int measure_val = measure(qureg,qr);
-                    if(m.output_types[circ][qr] == OutputType::FINAL_OUT){
-                        size_t final_out_qbit = m.output_registers[circ][qr];
-                        final_out_bits[final_out_qbit] = measure_val;
-                    }
-                    else if(m.output_types[circ][qr] == OutputType::REGISTER_OUT){
-                        size_t reg_out_bit = m.output_registers[circ][qr];
-                        actual_reg_assign[reg_out_bit] = measure_val;
-                    }
-                }
-            }
-            if(actual_reg_assign == class_reg_vals){
-                measure_counts[final_out_bits]++;
             }
         }
     }
+    return measure_counts;
 }
