@@ -5,6 +5,7 @@
 #include <fstream>
 #include "graph_partition.h"
 #include "tensor_network.h"
+#include "clustering.h"
 
 #define tassert(cond,name) {if(!(cond)){std::cout << "TEST FAILED: " name ": " #cond "\n";}}
 
@@ -76,6 +77,15 @@ void test_multigraph_decomp(){
         std::cout << "\n";
     }
 }
+
+void test_greedy_multicircuit_decomp(){
+    std::cout << "\n\n\n\nGreedy Decomposition" << std::endl;
+    std::ifstream file("Samples/rand-nq6-cn2-d10_rxyz.qasm");
+    Circuit c = parseGates(file);
+    NodeTable nt = circuitToNodeTable(c);
+    nt.getGreedyClusteredNetwork(5,c);
+}
+
 int main (int narg, char** varg) {
     test_parsing();
     test_graph_partitioning();
@@ -85,4 +95,5 @@ int main (int narg, char** varg) {
     test_to_tensor_and_to_circuit();
     test_multigraph_decomp();
     test_multicircuit_decomp();
+    test_greedy_multicircuit_decomp();
 }
