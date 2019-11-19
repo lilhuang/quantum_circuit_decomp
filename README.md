@@ -38,41 +38,44 @@ Take a very simple circuit in the qasm format (file in Samples/catStateEightQubi
 
 After you run the program on it `./build/view_quant_circ 2 Samples/catStateEightQubits.qasm`, you get
 
-    number of subcircuits: 2
+    #number of subcircuits: 2
     #circuit 0
-    E E E E E
-    5
+    E E E E
+    4
     H 0
     CNOT 0 1
     CNOT 1 2
     CNOT 2 3
-    CNOT 3 4
-    R0 F1 F2 F3 R1
+    F0 F1 F2 R0
     #circuit 1
-    E E E R0 R1
+    E E E E R0
     5
     CNOT 4 0
     CNOT 0 1
     CNOT 1 2
-    F5 F6 F7 F0 F4
+    CNOT 2 3
+    F4 F5 F6 F7 F3
+    communi cost: 1
+    num qubits: 5
 
 How to read this? Here is a commented version
 
-
-    number of subcircuits: 2
+    #number of subcircuits: 2
     #circuit 0
-    E E E E E       # each circuit starts with its input qubit description. E means the qubit is set to zero
-    5               # now a regular .qasm circuit description, starting with the number of qubits
+    E E E E         # each circuit starts with its input qubit description. E means the qubit is set to zero
+    4               # now a regular .qasm circuit description, starting with the number of qubits
     H 0
     CNOT 0 1
     CNOT 1 2
     CNOT 2 3
-    CNOT 3 4
-    R0 F1 F2 F3 R1  # output qubit description. R0 means that its output feeds into another circuit
+    F0 F1 F2 R0     # output qubit description. R0 means that its output feeds into another circuit
     #circuit 1      # circuit number 2 starts
-    E E E R0 R1     # R0 means that it takes input from the circuit output labeled as R0
+    E E E E R0      # R0 means that it takes input from the circuit output labeled as R0
     5
     CNOT 4 0
     CNOT 0 1
     CNOT 1 2
-    F5 F6 F7 F0 F4  #F0 means that this output should be interpreted as the 0th qubit of the original circuit.
+    CNOT 2 3
+    F4 F5 F6 F7 F3
+    communi cost: 1
+    num qubits: 5   #F0 means that this output should be interpreted as the 0th qubit of the original circuit.

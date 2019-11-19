@@ -15,7 +15,7 @@ struct Circuit{
     uint64_t num_qubits=0;
     std::vector<GateInfo> gates;
 };
-constexpr uint64_t EMPTY_REGISTER = -2;
+constexpr size_t EMPTY_REGISTER = -2;
 enum class OutputType{FINAL_OUT,REGISTER_OUT,NULL_OUT=-2};
 struct MultiCircuit{
     /*
