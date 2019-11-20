@@ -57,6 +57,19 @@ double compute_cost(size_t max_qubits,const std::vector<size_t> & partition,cons
     }
     return qubit_cost + communi_cost;
 }
+void out_probabilties(std::ostream & os, CircuitSamples & prob, int num_qubits){
+    os << "{\n";
+    for(auto probpair : prob){
+        os << "\"";
+        for(int i =0; i < num_qubits; i++){
+            os << int(probpair.first[i]);
+        }
+        os << "\"";
+        os << ": " << probpair.second;
+        os << ",";
+    }
+    os << "}\n";
+}
 int main (int narg, char** varg) {
     if(narg != 3){
         throw std::runtime_error("need to pass in 2 argument, the number of qubits of the machine and the name of the .qasm file to run.");
@@ -87,9 +100,20 @@ int main (int narg, char** varg) {
     print_communication_cost(multi_circ);
     std::ofstream graphvizfile("graph.vis");
     printPartitioning(network,partition,graphvizfile);
-    CircuitSamples samps = true_samples(c,10000);
+    //CircuitSamples samps = true_samples(c,10000);
+    return 0;
     std::vector<double> prob_mags = probability_mags(exact_simulate_circuit(c));
-    CircuitSamples c2 = sampled_simulate_multicircuit(multi_circ);
+    CircuitSamples c2 = sampled_simulate_multicircuit(multi_circ,400);
     std::cout << "similarity_multicirc: " << similarity(c2,prob_mags) << "\n";
-    std::cout << "similarity_circ: " << similarity(samps,prob_mags) << "\n";
+    out_probabilties(std::cout,c2,c.num_qubits);
+    std::cout << std::endl;
+    c2 = sampled_simulate_multicircuit(multi_circ,4000);
+    std::cout << "similarity_multicirc: " << similarity(c2,prob_mags) << "\n";
+    out_probabilties(std::cout,c2,c.num_qubits);
+    std::cout << std::endl;
+    c2 = sampled_simulate_multicircuit(multi_circ,40000);
+    std::cout << "similarity_multicirc: " << similarity(c2,prob_mags) << "\n";
+    out_probabilties(std::cout,c2,c.num_qubits);
+    std::cout << std::endl;
+    //std::cout << "similarity_circ: " << similarity(samps,prob_mags) << "\n";
 }
