@@ -34,7 +34,8 @@ struct NodeTable{
 	// first and last gates that are entered/exited by qubits stored in  this structure 
 	vector<Node*> inputGates, outputGates;
 	vector<Cluster*> getClusteredNetwork(u_int32_t availableQubits);
-	MultiGraphNetwork getGreedyClusteredNetwork(u_int32_t availableQubits, const Circuit & origCircuit);
+	MultiGraphNetwork getGreedyClusteredNetworkPartition(u_int32_t availableQubits, const Circuit & origCircuit);
+	vector<size_t> getGreedyClusteredNetworkVector(u_int32_t availableQubits, const Circuit & origCircuit);
 	u_int32_t numQubits;
 	NodeTable(int size);
 } ;

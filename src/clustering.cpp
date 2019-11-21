@@ -117,9 +117,12 @@ vector<Cluster*> NodeTable::getClusteredNetwork(u_int32_t availableQubits){
 		return clusters;
 	
 	}
+MultiGraphNetwork NodeTable::getGreedyClusteredNetworkPartition(u_int32_t availableQubits, const Circuit & origCircuit){
+	TensorNetwork tn = from_circuit(origCircuit, vector<uint8_t>());
+	return create_multi_graph_network(tn, getGreedyClusteredNetworkVector(availableQubits, origCircuit));
+}
 
-
-MultiGraphNetwork NodeTable::getGreedyClusteredNetwork(u_int32_t availableQubits, const Circuit & origCircuit){
+vector<size_t> NodeTable::getGreedyClusteredNetworkVector(u_int32_t availableQubits, const Circuit & origCircuit){
 	
 		
 
@@ -330,7 +333,7 @@ MultiGraphNetwork NodeTable::getGreedyClusteredNetwork(u_int32_t availableQubits
 			unsignedPartitionIdx[i] = partitionIdxs[i];
 		}
 		
-		return create_multi_graph_network(tn, unsignedPartitionIdx);
+		return unsignedPartitionIdx;
 	}
 
 // traverse from child node, count the common qubits used with the parent node
