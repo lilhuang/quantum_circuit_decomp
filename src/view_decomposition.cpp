@@ -9,24 +9,6 @@
 #include "tensor_network.h"
 #include "genetic_partitioning.h"
 
-uint64_t num_qubits_used(const MultiCircuit & multi_circ){
-    uint64_t max_qbits = 0;
-    for(const auto & v : multi_circ.circuits){
-        max_qbits = std::max(max_qbits,v.num_qubits);
-    }
-    return max_qbits;
-}
-size_t communi_size(const MultiCircuit & multi_circ){
-    size_t count = 0;
-    for(const auto & v : multi_circ.output_types){
-        for(OutputType out : v){
-            if(out == OutputType::REGISTER_OUT){
-                count += 1;
-            }
-        }
-    }
-    return count;
-}
 void print_communication_cost(MultiCircuit multi_circ){
     std::cout << "num regs1: " << multi_circ.num_classical_registers << '\n';
     std::cout << "num regs2: " << multi_circ.output_types.size() << '\n';
@@ -57,7 +39,7 @@ double compute_cost(size_t max_qubits,const std::vector<size_t> & partition,cons
     }
     return qubit_cost + communi_cost;
 }
-void out_probabilties(std::ostream & os, CircuitSamples & prob, int num_qubits){
+void out_probabilties(std::ostream & os, CircuitProbs & prob, int num_qubits){
     os << "{\n";
     for(auto probpair : prob){
         os << "\"";
@@ -101,13 +83,16 @@ int main (int narg, char** varg) {
     std::ofstream graphvizfile("graph.vis");
     printPartitioning(network,partition,graphvizfile);
     //CircuitSamples samps = true_samples(c,10000);
-    return 0;
     std::vector<double> prob_mags = probability_mags(exact_simulate_circuit(c));
-    CircuitSamples c2 = sampled_simulate_multicircuit(multi_circ,400);
+    CircuitProbs c2 = sampled_simulate_multicircuit(multi_circ,40);
     std::cout << "similarity_multicirc: " << similarity(c2,prob_mags) << "\n";
     out_probabilties(std::cout,c2,c.num_qubits);
     std::cout << std::endl;
-    c2 = sampled_simulate_multicircuit(multi_circ,4000);
+    c2 = sampled_simulate_multicircuit(multi_circ,400);
+    std::cout << "similarity_multicirc: " << similarity(c2,prob_mags) << "\n";
+    out_probabilties(std::cout,c2,c.num_qubits);
+    std::cout << std::endl;
+    c2 = sampled_simulate_multicircuit(multi_circ,2304);
     std::cout << "similarity_multicirc: " << similarity(c2,prob_mags) << "\n";
     out_probabilties(std::cout,c2,c.num_qubits);
     std::cout << std::endl;

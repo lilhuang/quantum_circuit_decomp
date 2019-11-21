@@ -291,3 +291,22 @@ MultiCircuit to_multi_circuit(MultiGraphNetwork graph_network){
     }
     return multi_circ;
 }
+
+uint64_t num_qubits_used(const MultiCircuit & multi_circ){
+    uint64_t max_qbits = 0;
+    for(const auto & v : multi_circ.circuits){
+        max_qbits = std::max(max_qbits,v.num_qubits);
+    }
+    return max_qbits;
+}
+size_t communi_size(const MultiCircuit & multi_circ){
+    size_t count = 0;
+    for(const auto & v : multi_circ.output_types){
+        for(OutputType out : v){
+            if(out == OutputType::REGISTER_OUT){
+                count += 1;
+            }
+        }
+    }
+    return count;
+}

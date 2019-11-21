@@ -125,13 +125,11 @@ double similarity(const CircuitSamples & c1,const CircuitSamples & c2){
 double sqr(double x){
     return x * x;
 }
-double similarity(const CircuitSamples & c1,const std::vector<double> & c2){
-    size_t count1 = total_samples(c1);
-
+double similarity(const CircuitProbs & c1,const std::vector<double> & c2){
     double sum = 0;
     for(const auto & keyval_pair : c1){
         uint64_t idx = keyval_pair.first.to_ullong();
-        double P = keyval_pair.second/double(count1);
+        double P = keyval_pair.second;
         double Q = c2[idx];
         sum += sqr(Q-P);//P * log(P/Q);
     }
@@ -256,7 +254,15 @@ void sample_multicirc_once(QuESTEnv & env,const MultiCircuit & m,uint64_t idx, u
         measure_counts[final_out_bits] += final_sign;
     //}
 }
-CircuitSamples sampled_simulate_multicircuit(const MultiCircuit & m,size_t number_samples){
+CircuitProbs samples_to_probs(CircuitSamples & samples,int num_samples,int qubits_communi){
+    CircuitProbs probs;
+    for(auto & kv_pair  : samples){
+        double prob = (kv_pair.second*double(1LL<<(qubits_communi*2)))/num_samples;
+        probs[kv_pair.first] = prob;
+    }
+    return probs;
+}
+CircuitProbs sampled_simulate_multicircuit(const MultiCircuit & m,size_t number_samples){
     QuESTEnv env = createQuESTEnv();
     constexpr size_t NUM_PAULI = 8;
     CircuitSamples measure_counts;
@@ -280,5 +286,5 @@ CircuitSamples sampled_simulate_multicircuit(const MultiCircuit & m,size_t numbe
         sample_multicirc_once(env,m,pauli_val,binary_val,measure_counts);
     }
     destroyQuESTEnv(env);
-    return measure_counts;
+    return samples_to_probs(measure_counts,number_samples,communi_size(m));
 }

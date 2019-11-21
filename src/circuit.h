@@ -27,3 +27,7 @@ struct MultiCircuit{
     std::vector<std::vector<OutputType>> output_types;
     std::vector<Circuit> circuits;
 };
+
+
+uint64_t num_qubits_used(const MultiCircuit & multi_circ);
+size_t communi_size(const MultiCircuit & multi_circ);
