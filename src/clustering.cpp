@@ -5,15 +5,18 @@
 #include "circuit.h"
 #include <algorithm>
 #include <iostream>
+#include "tensor_network.h"
+#include "gates.h"
 using namespace std;
 
-NodeTable circuitToNodeTable(Circuit & c){
+NodeTable circuitToNodeTable(const Circuit & c){
 	NodeTable nt(c.num_qubits);
 	for(int i = 0; i < c.gates.size(); i++){
 		GateInfo gate = c.gates[i];
 		// we only care about gates with 2 qubits
 		if(gate.bit2 != NULL_BIT){
 			Node * n = new Node();
+			n->gateIndex = i;
 			n->bit1 = gate.bit1;
 			n->bit2 = gate.bit2;
 			
@@ -60,13 +63,13 @@ NodeTable circuitToNodeTable(Circuit & c){
 }
 
 NodeTable::NodeTable(int size):
-	inputGates(vector<Node*> (size, nullptr)), outputGates(vector<Node*> (size,nullptr)), size(size)
+	inputGates(vector<Node*> (size, nullptr)), outputGates(vector<Node*> (size,nullptr)), numQubits(size)
 {}
 
 vector<Cluster*> NodeTable::getClusteredNetwork(u_int32_t availableQubits){
 	
 		vector<Cluster*> clusters;
-		vector<Cluster*> bitowners(size);
+		vector<Cluster*> bitowners(numQubits);
 
 		// initialization step
 		for (size_t i = 0; i < level[0].size(); i++)
@@ -116,7 +119,7 @@ vector<Cluster*> NodeTable::getClusteredNetwork(u_int32_t availableQubits){
 	}
 
 
-MultiCircuit NodeTable::getGreedyClusteredNetwork(u_int32_t availableQubits, const Circuit & origCircuit){
+MultiGraphNetwork NodeTable::getGreedyClusteredNetwork(u_int32_t availableQubits, const Circuit & origCircuit){
 	
 		
 
@@ -253,19 +256,81 @@ MultiCircuit NodeTable::getGreedyClusteredNetwork(u_int32_t availableQubits, con
 			}
 		}
 		
-		
+		TensorNetwork tn = from_circuit(origCircuit, vector<uint8_t>());
+		vector<int> partitionIdxs(tn.size(),-1);
+		unordered_map<uint,uint> clusterMapping;
+		uint clusterCnt = 0;
+		// this loop is badly written and not the most efficient
 		for (size_t i = 0; i < level.size(); i++)
 		{
-			for (size_t j = 0; j < level[i].size(); j++)
+			for (size_t j = 0; j < level.size(); j++)
 			{
-				cout << level[i][j]->cluster << "\t";
+				Node *n = level[i][j];
+				uint reducedClusterIndex = clusterMapping[n->cluster];
+
+				// this cluster id is encountered for the first time
+				if(clusterMapping.size()>clusterCnt){
+					clusterMapping[n->cluster] = clusterCnt++;
+					reducedClusterIndex = clusterMapping[n->cluster];
+				}
+				uint tensorGateIndex = n->gateIndex+numQubits;
+				partitionIdxs[tensorGateIndex] = reducedClusterIndex;
+
+				uint gateIndexIterator = tn.backward_edges[tensorGateIndex][0];
+				// while the parent tensor is not another cnot/2qubit gate
+				while (tn.tensors[gateIndexIterator].op.gate != GateTy::CNOT)
+				{
+					partitionIdxs[gateIndexIterator] = reducedClusterIndex;
+					if(tn.backward_edges[gateIndexIterator].size() == 1)
+						gateIndexIterator = tn.backward_edges[gateIndexIterator][0];
+					else
+						break;
+					
+				}
+				gateIndexIterator = tn.backward_edges[tensorGateIndex][1];
+				// while the parent tensor is not another cnot/2qubit gate
+				while (tn.tensors[gateIndexIterator].op.gate != GateTy::CNOT)
+				{
+					partitionIdxs[gateIndexIterator] = reducedClusterIndex;
+					if(tn.backward_edges[gateIndexIterator].size() == 1)
+						gateIndexIterator = tn.backward_edges[gateIndexIterator][0];
+					else
+						break;
+					
+				}
+
+				// if forward gates are not owned by anyone change their group
+				gateIndexIterator = tn.forward_edges[tensorGateIndex][0];
+				while (tn.tensors[gateIndexIterator].op.gate != GateTy::CNOT && partitionIdxs[gateIndexIterator] == -1)
+				{
+					partitionIdxs[gateIndexIterator] = reducedClusterIndex;
+					if(tn.forward_edges[gateIndexIterator].size() == 1)
+						gateIndexIterator = tn.forward_edges[gateIndexIterator][0];
+					else
+						break;
+					
+				}
+
+				gateIndexIterator = tn.forward_edges[tensorGateIndex][1];
+				while (tn.tensors[gateIndexIterator].op.gate != GateTy::CNOT && partitionIdxs[gateIndexIterator] == -1)
+				{
+					partitionIdxs[gateIndexIterator] = reducedClusterIndex;
+					if(tn.forward_edges[gateIndexIterator].size() == 1)
+						gateIndexIterator = tn.forward_edges[gateIndexIterator][1];
+					else
+						break;
+					
+				}
 			}
-			cout << endl;
+		}
+		vector<size_t> unsignedPartitionIdx(partitionIdxs.size());
+		for (size_t i = 0; i < partitionIdxs.size(); i++)
+		{
+			assert(partitionIdxs[i]!=-1);
+			unsignedPartitionIdx[i] = partitionIdxs[i];
 		}
 		
-
-		// return empty multi circuit
-		return MultiCircuit();
+		return create_multi_graph_network(tn, unsignedPartitionIdx);
 	}
 
 // traverse from child node, count the common qubits used with the parent node
