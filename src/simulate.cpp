@@ -5,6 +5,7 @@
 #include <bitset>
 #include <fstream>
 #include <cmath>
+#include <thread>
 #include <random>
 
 
@@ -262,10 +263,12 @@ CircuitProbs samples_to_probs(CircuitSamples & samples,int num_samples,int qubit
     }
     return probs;
 }
-CircuitProbs sampled_simulate_multicircuit(const MultiCircuit & m,size_t number_samples){
+void perform_sample(CircuitSamples * _measure_counts,const MultiCircuit * _m,size_t number_samples){
     QuESTEnv env = createQuESTEnv();
     constexpr size_t NUM_PAULI = 8;
-    CircuitSamples measure_counts;
+    const MultiCircuit & m = *_m;
+    CircuitSamples & measure_counts = *_measure_counts;
+    measure_counts.clear();
 
     std::random_device rand_device;
     std::default_random_engine generator(rand_device());
@@ -273,10 +276,10 @@ CircuitProbs sampled_simulate_multicircuit(const MultiCircuit & m,size_t number_
     auto lrand = [&](size_t max){
         return std::uniform_int_distribution<size_t>(0,max-1)(generator);
     };
-    std::cout << lrand(2) << "\n";
-    std::cout << lrand(2) << "\n";
-    std::cout << lrand(2) << "\n";
-    std::cout << lrand(2) << "\n";
+    //std::cout << lrand(2) << "\n";
+    //std::cout << lrand(2) << "\n";
+    //std::cout << lrand(2) << "\n";
+    //std::cout << lrand(2) << "\n";
 
     const size_t pauli_max = (1ULL)<<(m.num_classical_registers*3);
     const size_t value_max = (1ULL << m.num_classical_registers);
@@ -286,5 +289,26 @@ CircuitProbs sampled_simulate_multicircuit(const MultiCircuit & m,size_t number_
         sample_multicirc_once(env,m,pauli_val,binary_val,measure_counts);
     }
     destroyQuESTEnv(env);
-    return samples_to_probs(measure_counts,number_samples,communi_size(m));
+}
+void add_circ_samples(CircuitSamples & dest,CircuitSamples & src){
+    for(auto samp_pair : src){
+        dest[samp_pair.first] += samp_pair.second;
+    }
+}
+CircuitProbs sampled_simulate_multicircuit(const MultiCircuit & m,size_t number_samples){
+    unsigned num_threads = std::thread::hardware_concurrency();
+    std::vector<std::thread> threads;
+    std::vector<CircuitSamples> samples(num_threads);
+    size_t tot_samples = 0;
+    for(int i = 0; i < num_threads; i++){
+        size_t num_samples = i == num_threads-1 ? number_samples-tot_samples : number_samples/num_threads;
+        threads.push_back(std::thread(perform_sample,&samples[i],&m,num_samples));
+        tot_samples += num_samples;
+    }
+    CircuitSamples final_result;
+    for(int i = 0; i < num_threads; i++){
+        threads[i].join();
+        add_circ_samples(final_result,samples[i]);
+    }
+    return samples_to_probs(final_result,number_samples,m.num_classical_registers);
 }

@@ -20,6 +20,8 @@ add_executable(test_quant_circ
 add_executable(view_quant_circ
     ${CPP_SOURCE_DIR}/view_decomposition.cpp
 )
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
 
 set_property(TARGET quant_circ_lib PROPERTY CXX_STANDARD 14)
 set_property(TARGET test_quant_circ PROPERTY CXX_STANDARD 14)
@@ -33,5 +35,5 @@ add_subdirectory("QuEST_")
 
 target_link_libraries(quant_circ_lib PUBLIC QuEST)
 target_link_libraries(quant_circ_lib PUBLIC "${OpenMP_CXX_FLAGS}")
-target_link_libraries(test_quant_circ quant_circ_lib)
-target_link_libraries(view_quant_circ quant_circ_lib)
+target_link_libraries(test_quant_circ quant_circ_lib Threads::Threads)
+target_link_libraries(view_quant_circ quant_circ_lib Threads::Threads)
