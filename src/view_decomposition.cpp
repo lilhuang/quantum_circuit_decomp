@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include "graph_partition.h"
 #include "tensor_network.h"
+#include "clustering.h"
 #include "genetic_partitioning.h"
 
 uint64_t num_qubits_used(const MultiCircuit & multi_circ){
@@ -87,4 +88,9 @@ int main (int narg, char** varg) {
     print_communication_cost(multi_circ);
     std::ofstream graphvizfile("graph.vis");
     printPartitioning(network,partition,graphvizfile);
+
+    NodeTable n = circuitToNodeTable(c);
+    std::vector<size_t> greedyPartition = n.getGreedyClusteredNetworkVector(max_qubits,c);
+    std::ofstream greedygraphvizfile("greedygraph.vis");
+    printPartitioning(network,greedyPartition,greedygraphvizfile);
 }

@@ -83,7 +83,6 @@ void test_greedy_multicircuit_decomp(){
     std::ifstream file("Samples/rand-nq6-cn2-d10_rxyz.qasm");
     Circuit c = parseGates(file);
     NodeTable nt = circuitToNodeTable(c);
-    nt.getGreedyClusteredNetwork(5,c);
 }
 
 int main (int narg, char** varg) {

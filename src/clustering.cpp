@@ -266,11 +266,11 @@ vector<size_t> NodeTable::getGreedyClusteredNetworkVector(u_int32_t availableQub
 		// this loop is badly written and not the most efficient
 		for (size_t i = 0; i < level.size(); i++)
 		{
-			for (size_t j = 0; j < level.size(); j++)
+			for (size_t j = 0; j < level[i].size(); j++)
 			{
 				Node *n = level[i][j];
 				uint reducedClusterIndex = clusterMapping[n->cluster];
-
+				
 				// this cluster id is encountered for the first time
 				if(clusterMapping.size()>clusterCnt){
 					clusterMapping[n->cluster] = clusterCnt++;
@@ -319,7 +319,7 @@ vector<size_t> NodeTable::getGreedyClusteredNetworkVector(u_int32_t availableQub
 				{
 					partitionIdxs[gateIndexIterator] = reducedClusterIndex;
 					if(tn.forward_edges[gateIndexIterator].size() == 1)
-						gateIndexIterator = tn.forward_edges[gateIndexIterator][1];
+						gateIndexIterator = tn.forward_edges[gateIndexIterator][0];
 					else
 						break;
 					
