@@ -23,3 +23,4 @@ CircuitProbs sampled_simulate_multicircuit(const MultiCircuit & m, size_t number
 double similarity(const CircuitSamples & c1,const CircuitSamples & c2);
 double similarity(const CircuitProbs & c1,const std::vector<double> & c2);
 std::vector<double> probability_mags(const std::vector<qcomplex> & exact_result);
+CircuitProbs mags_to_probs(std::vector<double> & circuit_mags);

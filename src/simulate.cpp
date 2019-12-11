@@ -8,7 +8,6 @@
 #include <thread>
 #include <random>
 
-
 #include "simulate.h"
 # include "QuEST.h"
 
@@ -108,6 +107,17 @@ std::vector<double> probability_mags(const std::vector<qcomplex> & exact_result)
         res[i] = mag(exact_result[i]);
     }
     return res;
+}
+
+CircuitProbs mags_to_probs(std::vector<double> & circuit_mags){
+    CircuitProbs probs;
+    for(size_t i = 0; i < circuit_mags.size(); i++){
+        QuantumFinalOut outbits(i);
+        if(circuit_mags[i] != 0.0){
+            probs[outbits] = circuit_mags[i];
+        }
+    }
+    return probs;
 }
 
 double similarity(const CircuitSamples & c1,const CircuitSamples & c2){

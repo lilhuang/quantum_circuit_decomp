@@ -10,10 +10,10 @@ using Info = std::vector<size_t>;
 using Population = std::vector<Info>;
 using Graph = std::vector<std::vector<size_t>>;
 
-constexpr size_t POP_SIZE = 1000;
+constexpr size_t POP_SIZE = 2000;
 constexpr size_t MUTATE_COUNT = 80;
-constexpr size_t CROSSOVER_COUNT = 50;
-constexpr size_t GENERATIONS = 500;
+constexpr size_t CROSSOVER_COUNT = 80;
+constexpr size_t GENERATIONS = 800;
 std::random_device rand_device;
 std::default_random_engine generator(rand_device());
 size_t lrand(){

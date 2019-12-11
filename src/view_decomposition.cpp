@@ -84,6 +84,10 @@ int main (int narg, char** varg) {
     printPartitioning(network,partition,graphvizfile);
     //CircuitSamples samps = true_samples(c,10000);
     std::vector<double> prob_mags = probability_mags(exact_simulate_circuit(c));
+    CircuitProbs exact_probs = mags_to_probs(prob_mags);
+    std::ofstream exact("exact.json");
+    out_probabilties(exact,exact_probs,c.num_qubits);
+    return 1;
     CircuitProbs c2 = sampled_simulate_multicircuit(multi_circ,40);
     std::cout << "similarity_multicirc: " << similarity(c2,prob_mags) << "\n";
     out_probabilties(std::cout,c2,c.num_qubits);
@@ -98,7 +102,13 @@ int main (int narg, char** varg) {
     std::cout << std::endl;
     c2 = sampled_simulate_multicircuit(multi_circ,40000);
     std::cout << "similarity_multicirc: " << similarity(c2,prob_mags) << "\n";
-    out_probabilties(std::cout,c2,c.num_qubits);
+    std::ofstream out40k("output40k.json");
+    out_probabilties(out40k,c2,c.num_qubits);
+    std::cout << std::endl;
+    c2 = sampled_simulate_multicircuit(multi_circ,400000);
+    std::cout << "similarity_multicirc: " << similarity(c2,prob_mags) << "\n";
+    std::ofstream out400k("output400k.json");
+    out_probabilties(out400k,c2,c.num_qubits);
     std::cout << std::endl;
     //std::cout << "similarity_circ: " << similarity(samps,prob_mags) << "\n";
 }
