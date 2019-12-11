@@ -20,20 +20,25 @@ add_executable(test_quant_circ
 add_executable(view_quant_circ
     ${CPP_SOURCE_DIR}/view_decomposition.cpp
 )
+add_executable(compare_partitionings
+    ${CPP_SOURCE_DIR}/compare_partitionings.cpp
+)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 set_property(TARGET quant_circ_lib PROPERTY CXX_STANDARD 14)
 set_property(TARGET test_quant_circ PROPERTY CXX_STANDARD 14)
 set_property(TARGET view_quant_circ PROPERTY CXX_STANDARD 14)
+set_property(TARGET compare_partitionings PROPERTY CXX_STANDARD 14)
 
 set(MULTITHREADED FALSE CACHE BOOL "disable multithreading for quest")
 
-#add_subdirectory("metis-5.1.0")
+add_subdirectory("metis-5.1.0")
 add_subdirectory("QuEST_")
 #add_subdirectory("qtorch")
 
-target_link_libraries(quant_circ_lib PUBLIC QuEST)
+target_link_libraries(quant_circ_lib PUBLIC QuEST metis)
 target_link_libraries(quant_circ_lib PUBLIC "${OpenMP_CXX_FLAGS}")
 target_link_libraries(test_quant_circ quant_circ_lib Threads::Threads)
 target_link_libraries(view_quant_circ quant_circ_lib Threads::Threads)
+target_link_libraries(compare_partitionings quant_circ_lib Threads::Threads)
