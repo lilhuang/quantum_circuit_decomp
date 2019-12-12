@@ -6,7 +6,7 @@ samples = [
     ["rand20-19","Samples/4regRand20Node1-p1.qasm",19],
 ]
 
-csv_data = ["genetic_score,genetic_time,metis_score,metis_time\n"]
+csv_data = ["genetic_score,genetic_time,metis_score,metis_time,greedy_score,greedy_time\n"]
 for title,fname,qubits in samples:
     cmd = ["./release/compare_partitionings",str(qubits),fname]
     print(" ".join(cmd))

@@ -7,6 +7,7 @@
 #include <ctime>
 #include <stdexcept>
 #include "graph_partition.h"
+#include "clustering.h"
 #include "tensor_network.h"
 #include "genetic_partitioning.h"
 
@@ -55,8 +56,15 @@ int main (int narg, char** varg) {
         return num_qubits <= max_qubits;
     });
     int metis_time = clock() - start_metis;
+    
+    int greedy_time = clock();
+    NodeTable nodetable = circuitToNodeTable(c);
+    std::vector<size_t> greedy_partition = nodetable.getGreedyClusteredNetworkVector(max_qubits,c);
+    greedy_time = clock() - greedy_time;
+
     std::cout << num_qubits_partition(gentic_partition,network) << "," <<  genetic_time/double(CLOCKS_PER_SEC) << "," <<
-            num_qubits_partition(metis_partition,network)  << "," <<  metis_time/double(CLOCKS_PER_SEC) << "\n";
+            num_qubits_partition(metis_partition,network)  << "," <<  metis_time/double(CLOCKS_PER_SEC) << "," << 
+            num_qubits_partition(greedy_partition,network) << "," <<  greedy_time/double(CLOCKS_PER_SEC) << "\n";
 
             std::ofstream graphvizfile("graph.vis");
     //printPartitioning(network,metis_partition,graphvizfile);
