@@ -93,4 +93,9 @@ int main (int narg, char** varg) {
     std::vector<size_t> greedyPartition = n.getGreedyClusteredNetworkVector(max_qubits,c);
     std::ofstream greedygraphvizfile("greedygraph.vis");
     printPartitioning(network,greedyPartition,greedygraphvizfile);
+    multi_network = create_multi_graph_network(network,greedyPartition);
+    multi_circ = to_multi_circuit(multi_network);
+    std::cout << "#number of subcircuits: " << multi_circ.circuits.size() << "\n";
+    printMultiCircuit(multi_circ,std::cout);
+    print_communication_cost(multi_circ);
 }
