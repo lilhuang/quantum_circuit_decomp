@@ -124,6 +124,7 @@ std::string reg_to_str(size_t reg,OutputType type){
     assert(false);
 }
 void printMultiCircuit(MultiCircuit multi_circ,std::ostream & output){
+    output << "\n\n******\n";
     for(size_t part = 0; part < multi_circ.circuits.size(); part++){
         output << "#circuit " << part << "\n";
         for(size_t in_r : multi_circ.input_registers[part]){
