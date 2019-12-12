@@ -10,10 +10,10 @@ using Info = std::vector<size_t>;
 using Population = std::vector<Info>;
 using Graph = std::vector<std::vector<size_t>>;
 
-constexpr size_t POP_SIZE = 50;
-constexpr size_t MUTATE_COUNT = 120;
+constexpr size_t POP_SIZE = 2000;
+constexpr size_t MUTATE_COUNT = 80;
 constexpr size_t CROSSOVER_COUNT = 80;
-constexpr size_t GENERATIONS = 200;
+constexpr size_t GENERATIONS = 800;
 std::random_device rand_device;
 std::default_random_engine generator(rand_device());
 size_t lrand(){
@@ -109,44 +109,48 @@ size_t ident_count(const Info & i1, const Info & i2){
     }
     return count;
 }
-Population compete(const Population & old_pop,size_t new_pop_size,std::function<double(std::vector<size_t>)> evaluate){
-    if(old_pop.size() < new_pop_size){
-        return old_pop;
-    }
+std::vector<double> calc_evals(const Population & old_pop,std::function<double(std::vector<size_t>)> evaluate){
     std::vector<double> evaluations(old_pop.size());
     for(size_t i = 0; i < old_pop.size(); i++){
         evaluations[i] = evaluate(old_pop[i]);
     }
+    return evaluations;
+}
+template<typename vecty>
+vecty concat(const vecty & v1,const vecty & v2){
+    vecty res = v1;
+    res.insert(res.end(),v2.begin(),v2.end());
+    return res;
+}
+template<typename vecty>
+vecty select(const vecty & v1,const std::vector<size_t> & v2){
+    vecty res;
+    for(size_t i : v2){
+        res.push_back(v1.at(i));
+    }
+    return res;
+}
+
+std::vector<size_t> compete(const Population & old_pop,size_t new_pop_size,std::vector<double> evaluations){
     std::vector<char> remaining(old_pop.size(),true);
     size_t remain_count = old_pop.size();
     size_t total_sim_count = 0;
     size_t loop_count = 1;
-    while(remain_count > new_pop_size){
-        size_t n1 = lrand()%old_pop.size();
-        size_t n2 = lrand()%old_pop.size();
-        size_t sim_count = ident_count(old_pop[n1],old_pop[n2]);
-        size_t worse_idx = evaluations[n1] < evaluations[n2] ? n1 : n2;
 
-        double average_sim_coun = (total_sim_count/loop_count);
-        if(false && sim_count < average_sim_coun){
-            if(lrand()%5 == 0){
-                remaining[worse_idx] = false;
-                remain_count--;
-            }
-        }
-        else{
-            remaining[worse_idx] = false;
-            remain_count--;
-        }
-
-        total_sim_count += sim_count;
-        loop_count++;
-    }
-    Population res_pop;
+    struct CmpIdx{
+        double x;
+        size_t idx;
+        bool operator < (CmpIdx o)const{return x > o.x;}
+    };
+    std::vector<CmpIdx> cmp_evaluations(old_pop.size());
     for(size_t i = 0; i < old_pop.size(); i++){
-        if(remaining[i]){
-            res_pop.emplace_back(old_pop[i]);
-        }
+        cmp_evaluations[i] = CmpIdx{.x=evaluations[i],.idx=i};
+    }
+    std::sort(cmp_evaluations.begin(),cmp_evaluations.end());
+    std::vector<size_t>  res_pop;
+    for(size_t i = 0; i < new_pop_size; i++){
+        CmpIdx evaledIdx = cmp_evaluations[i];
+        res_pop.push_back(evaledIdx.idx);
     }
     return res_pop;
 }
@@ -154,22 +158,28 @@ std::vector<size_t> calculate_best_partition(const std::vector<std::vector<size_
     size_t graph_size = directed.size();
     Graph undirected = undirected_from_directed(directed);
     Population cur_pop = initialize(graph_size,undirected);
+    std::vector<double> cur_evals = calc_evals(cur_pop,evaluate);
 
     for(int gen = 0; gen < GENERATIONS; gen++){
-        Population child_pop = cur_pop;
+        Population child_pop;
         for(size_t i = 0; i < MUTATE_COUNT; i++){
             child_pop.emplace_back(mutate(rand_choice(cur_pop),undirected));
         }
         for(size_t i = 0; i < CROSSOVER_COUNT; i++){
             child_pop.emplace_back(crossover(rand_choice(cur_pop),rand_choice(cur_pop),undirected));
         }
-        Population next_pop = compete(child_pop,POP_SIZE,evaluate);
-        cur_pop.swap(next_pop);
+        std::vector<double> child_evals = calc_evals(child_pop,evaluate);
+        Population cat_pop = concat(cur_pop,child_pop);
+        std::vector<double> cat_evals = concat(cur_evals,child_evals);
+        std::vector<size_t> next_pop_idxs = compete(cat_pop,POP_SIZE,cat_evals);
+        cur_evals = select(cat_evals,next_pop_idxs);
+        cur_pop = select(cat_pop,next_pop_idxs);
+
     }
     Info best_info;
     double best_val = -1e100;
     for(size_t i = 0; i < cur_pop.size(); i++){
-        double cur_val = evaluate(cur_pop[i]);
+        double cur_val = cur_evals[i];
         if(best_val < cur_val){
             best_val = cur_val;
             best_info = cur_pop[i];

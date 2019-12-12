@@ -15,11 +15,11 @@ Should compile the project. This requires CMake 3.5 or above, a c compile and GN
 
 You can run a tool that visualizes the output decomposition by
 
-    view_quant_circ <number_partitions> <circuit_filename>
+    view_quant_circ <number_qubits> <circuit_filename>
 
 For example,
 
-    ./build/view_quant_circ 4 Samples/4regRand20Node5-p1.qasm
+    ./build/view_quant_circ 15 Samples/4regRand20Node5-p1.qasm
 
 
 ### Output format
