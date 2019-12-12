@@ -22,6 +22,7 @@ inline size_t num_bits(GateTy gate){
         case GateTy::CNOT:
             return 2;
         case GateTy::NULL_GATE:
+        default:
             return 0;
     }
 }
